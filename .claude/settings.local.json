@@ -24,7 +24,12 @@
       "Bash(git init:*)",
       "Bash(git checkout:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(./mvn24 spring-boot:run)",
+      "Bash(./mvn17 clean:*)",
+      "Bash(curl -s --connect-timeout 3 http://localhost:8080/hello)",
+      "Bash(curl -s --connect-timeout 5 http://localhost:8080/hello)",
+      "Bash(python3 -m json.tool)"
     ]
   }
 }

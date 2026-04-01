@@ -1,0 +1,55 @@
+package com.example.demo.controller;
+
+import com.example.demo.dto.ApiResponse;
+import com.example.demo.dto.LoginRequest;
+import com.example.demo.dto.RegisterRequest;
+import com.example.demo.dto.UserQueryRequest;
+import com.example.demo.entity.User;
+import com.example.demo.service.UserService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/user")
+public class UserController {
+
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @PostMapping("/register")
+    public ApiResponse<User> register(@RequestBody RegisterRequest request) {
+        try {
+            User user = userService.register(request);
+            user.setPassword(null);
+            return ApiResponse.success("注册成功", user);
+        } catch (Exception e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/login")
+    public ApiResponse<User> login(@RequestBody LoginRequest request) {
+        try {
+            User user = userService.login(request);
+            user.setPassword(null);
+            return ApiResponse.success("登录成功", user);
+        } catch (Exception e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/list")
+    public ApiResponse<List<User>> list(UserQueryRequest request) {
+        try {
+            List<User> list = userService.getUserList(request);
+            list.forEach(user -> user.setPassword(null));
+            return ApiResponse.success(list);
+        } catch (Exception e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+}
