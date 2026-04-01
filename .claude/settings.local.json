@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn:*)",
+      "Bash(apt-get update:*)",
+      "Bash(apt-get install:*)",
+      "Bash(yum install:*)",
+      "Bash(curl -s http://localhost:8080/hello)",
+      "Bash(pkill:*)",
+      "Bash(java:*)",
+      "Bash(yum search:*)",
+      "Bash(javac -version)",
+      "Read(//tmp/**)",
+      "Bash(javac -release 24 Test.java)",
+      "Bash(javac --help)",
+      "Bash(javac --release 24 Test.java)",
+      "Bash(xargs rm:*)",
+      "Bash(kill 77179 77390)",
+      "Bash(JAVA_HOME=/usr/lib/jvm/jdk-24.0.1-oracle-x64 mvn clean compile)",
+      "Bash(update-alternatives --list java)",
+      "Bash(update-alternatives --list javac)",
+      "Bash(chmod:*)",
+      "Bash(./mvn24 clean:*)",
+      "Bash(git init:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
