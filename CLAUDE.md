@@ -51,12 +51,14 @@ mvn clean package
 
 ### Testing
 ```bash
-# Run tests (if any exist)
+# Run tests - always use this command directly to run tests
 mvn test
 
 # Test the running application
 curl http://localhost:8080/hello
 ```
+
+**重要规则：运行测试时，直接使用 `mvn test` 命令，不要使用其他包装脚本或命令。**
 
 ### Development
 ```bash
@@ -73,7 +75,12 @@ mvn validate
 
 2. **Spring Boot 4.0.5**: This is a recent version of Spring Boot. Ensure compatibility with Java 24 features if modifying the codebase.
 
-3. **No Test Structure**: The project currently has no test files in the `src/test` directory. When adding new functionality, consider adding appropriate unit and integration tests.
+3. **Test Requirements**: **All functional code must have corresponding tests**. For every function/method you write:
+   - Write unit tests for business logic
+   - Write integration tests for controllers and API endpoints
+   - Use `spring-boot-starter-test` dependencies (JUnit 5, MockMvc, AssertJ)
+   - Tests must pass before considering a feature complete
+   - After completing any functionality, always run `mvn test` to verify
 
 4. **Simple Architecture**: This is a minimal Spring Boot application. For production use, consider adding error handling, logging, health checks, and additional configuration.
 
@@ -97,3 +104,13 @@ When extending this application:
 - Add repository classes for data access
 - Update `application.properties` for additional configuration
 - Consider adding `@ComponentScan` if organizing code into multiple packages
+- **IMPORTANT**: Always write tests for any new functionality before considering it complete
+- **After finishing any feature, run `mvn test` to ensure all tests pass**
+
+## Testing Workflow
+
+1. **Before writing code**: Understand what needs to be tested
+2. **Write code and tests together**: Follow TDD (Test-Driven Development) practices when possible
+3. **Test coverage**: Ensure all public methods have test coverage
+4. **Run tests**: Execute `mvn test` after completing any functionality
+5. **Verify**: All tests must pass before marking a task as complete

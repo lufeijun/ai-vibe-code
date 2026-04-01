@@ -1,11 +1,17 @@
 package com.example.demo.controller;
 
+import com.example.demo.config.JwtTokenProvider;
 import com.example.demo.dto.ApiResponse;
 import com.example.demo.dto.LoginRequest;
+import com.example.demo.dto.LoginResponse;
 import com.example.demo.dto.RegisterRequest;
 import com.example.demo.dto.UserQueryRequest;
 import com.example.demo.entity.User;
 import com.example.demo.service.UserService;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,9 +21,15 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider tokenProvider;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService,
+                          AuthenticationManager authenticationManager,
+                          JwtTokenProvider tokenProvider) {
         this.userService = userService;
+        this.authenticationManager = authenticationManager;
+        this.tokenProvider = tokenProvider;
     }
 
     @PostMapping("/register")
@@ -32,11 +44,25 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<User> login(@RequestBody LoginRequest request) {
+    public ApiResponse<LoginResponse> login(@RequestBody LoginRequest request) {
         try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getAccount(), request.getPassword())
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = tokenProvider.generateToken(authentication);
+
             User user = userService.login(request);
-            user.setPassword(null);
-            return ApiResponse.success("登录成功", user);
+            LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getPhone()
+            );
+
+            LoginResponse loginResponse = new LoginResponse(jwt, userInfo);
+            return ApiResponse.success("登录成功", loginResponse);
         } catch (Exception e) {
             return ApiResponse.error(e.getMessage());
         }

@@ -29,7 +29,9 @@
       "Bash(./mvn17 clean:*)",
       "Bash(curl -s --connect-timeout 3 http://localhost:8080/hello)",
       "Bash(curl -s --connect-timeout 5 http://localhost:8080/hello)",
-      "Bash(python3 -m json.tool)"
+      "Bash(python3 -m json.tool)",
+      "Bash(./mvn24 test:*)",
+      "Bash(curl:*)"
     ]
   }
 }
