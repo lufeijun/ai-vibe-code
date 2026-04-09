@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.demo.annotation.RequirePermission;
 import com.example.demo.config.JwtTokenProvider;
 import com.example.demo.dto.ApiResponse;
@@ -7,6 +8,7 @@ import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.LoginResponse;
 import com.example.demo.dto.RegisterRequest;
 import com.example.demo.dto.UserQueryRequest;
+import com.example.demo.dto.UserWithRolesDTO;
 import com.example.demo.entity.Role;
 import com.example.demo.entity.User;
 import com.example.demo.service.PermissionService;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 @Slf4j
 @RestController
@@ -78,13 +81,12 @@ public class UserController {
         }
     }
 
-    @GetMapping("/list")
+    @PostMapping("/list")
     // @RequirePermission("user:center:userlist")
-    public ApiResponse<List<User>> list(UserQueryRequest request) {
+    public ApiResponse<IPage<UserWithRolesDTO>> list(@RequestBody UserQueryRequest request) {
         try {
-            List<User> list = userService.getUserList(request);
-            list.forEach(user -> user.setPassword(null));
-            return ApiResponse.success(list);
+            IPage<UserWithRolesDTO> page = userService.getUserList(request);
+            return ApiResponse.success(page);
         } catch (Exception e) {
             return ApiResponse.error(e.getMessage());
         }

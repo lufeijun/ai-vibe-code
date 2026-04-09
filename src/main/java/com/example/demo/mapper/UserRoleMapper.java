@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -22,4 +23,12 @@ public interface UserRoleMapper extends BaseMapper<UserRole> {
             "</foreach>" +
             "</script>")
     void batchInsert(@Param("userId") Long userId, @Param("roleIds") List<Long> roleIds);
+
+    @Select("<script>" +
+            "SELECT * FROM user_roles WHERE user_id IN " +
+            "<foreach collection='userIds' item='userId' open='(' separator=',' close=')'>" +
+            "#{userId}" +
+            "</foreach>" +
+            "</script>")
+    List<UserRole> findByUserIds(@Param("userIds") List<Long> userIds);
 }
