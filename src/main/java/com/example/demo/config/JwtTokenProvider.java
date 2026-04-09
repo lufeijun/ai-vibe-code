@@ -1,7 +1,9 @@
 package com.example.demo.config;
 
+import com.example.demo.exception.JwtAuthenticationException;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -70,8 +72,16 @@ public class JwtTokenProvider {
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
+        } catch (ExpiredJwtException e) {
+            throw JwtAuthenticationException.tokenExpired();
+        } catch (UnsupportedJwtException e) {
+            throw JwtAuthenticationException.tokenUnsupported();
+        } catch (MalformedJwtException e) {
+            throw JwtAuthenticationException.tokenMalformed();
+        } catch (SignatureException e) {
+            throw JwtAuthenticationException.tokenSignatureInvalid();
+        } catch (IllegalArgumentException e) {
+            throw JwtAuthenticationException.tokenInvalid();
         }
     }
 }

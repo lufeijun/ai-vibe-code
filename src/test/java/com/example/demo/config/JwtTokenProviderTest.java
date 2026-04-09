@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+import com.example.demo.exception.JwtAuthenticationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,20 +82,22 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    void validateToken_ShouldReturnFalseForInvalidToken() {
+    void validateToken_ShouldThrowExceptionForInvalidToken() {
         String invalidToken = "invalid.token.here";
 
-        boolean isValid = tokenProvider.validateToken(invalidToken);
+        JwtAuthenticationException exception = assertThrows(JwtAuthenticationException.class,
+                () -> tokenProvider.validateToken(invalidToken));
 
-        assertFalse(isValid);
+        assertEquals("TOKEN_MALFORMED", exception.getErrorCode());
     }
 
     @Test
-    void validateToken_ShouldReturnFalseForMalformedToken() {
+    void validateToken_ShouldThrowExceptionForMalformedToken() {
         String malformedToken = "this-is-not-a-valid-jwt-token";
 
-        boolean isValid = tokenProvider.validateToken(malformedToken);
+        JwtAuthenticationException exception = assertThrows(JwtAuthenticationException.class,
+                () -> tokenProvider.validateToken(malformedToken));
 
-        assertFalse(isValid);
+        assertEquals("TOKEN_MALFORMED", exception.getErrorCode());
     }
 }

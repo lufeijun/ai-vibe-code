@@ -2,33 +2,33 @@ package com.example.demo.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("users")
-public class User {
+@TableName("permissions")
+public class Permission {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private String username;
+    @TableField("parent_id")
+    private Long parentId;
 
-    private String password;
+    private String name;
 
-    private String email;
+    private String code;
 
-    private String phone;
+    private String type;
 
-    private String city;
+    private Integer level;
 
-    @TableField("is_employed")
-    private Boolean isEmployed;
+    private String path;
 
-    @TableField("hire_date")
-    private LocalDate hireDate;
+    private String icon;
 
-    @TableField("resignation_date")
-    private LocalDate resignationDate;
+    @TableField("sort_order")
+    private Integer sortOrder;
+
+    private Boolean enabled;
 
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
