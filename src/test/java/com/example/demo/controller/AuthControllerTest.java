@@ -38,7 +38,7 @@ class AuthControllerTest {
 
     @Test
     void accessProtectedEndpoint_WithValidToken_ShouldReturnOk() throws Exception {
-        String token = tokenProvider.generateTokenFromUsername("testuser");
+        String token = tokenProvider.generateTokenFromUsername("testuser", 123L);
 
         when(userDetailsService.loadUserByUsername(anyString()))
                 .thenReturn(new User("testuser", "", new ArrayList<>()));

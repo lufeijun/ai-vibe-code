@@ -24,7 +24,17 @@ class JwtTokenProviderTest {
     @Test
     void generateTokenFromUsername_ShouldGenerateValidToken() {
         String username = "testuser";
-        String token = tokenProvider.generateTokenFromUsername(username);
+        String token = tokenProvider.generateTokenFromUsername(username, null);
+
+        assertNotNull(token);
+        assertTrue(token.length() > 0);
+    }
+
+    @Test
+    void generateTokenFromUsername_WithUserId_ShouldGenerateValidToken() {
+        String username = "testuser";
+        Long userId = 123L;
+        String token = tokenProvider.generateTokenFromUsername(username, userId);
 
         assertNotNull(token);
         assertTrue(token.length() > 0);
@@ -33,7 +43,7 @@ class JwtTokenProviderTest {
     @Test
     void getUsernameFromToken_ShouldReturnCorrectUsername() {
         String username = "testuser";
-        String token = tokenProvider.generateTokenFromUsername(username);
+        String token = tokenProvider.generateTokenFromUsername(username, null);
 
         String extractedUsername = tokenProvider.getUsernameFromToken(token);
 
@@ -41,8 +51,29 @@ class JwtTokenProviderTest {
     }
 
     @Test
+    void getUserIdFromToken_ShouldReturnCorrectUserId() {
+        String username = "testuser";
+        Long userId = 123L;
+        String token = tokenProvider.generateTokenFromUsername(username, userId);
+
+        Long extractedUserId = tokenProvider.getUserIdFromToken(token);
+
+        assertEquals(userId, extractedUserId);
+    }
+
+    @Test
+    void getUserIdFromToken_WhenNoUserId_ShouldReturnNull() {
+        String username = "testuser";
+        String token = tokenProvider.generateTokenFromUsername(username, null);
+
+        Long extractedUserId = tokenProvider.getUserIdFromToken(token);
+
+        assertNull(extractedUserId);
+    }
+
+    @Test
     void validateToken_ShouldReturnTrueForValidToken() {
-        String token = tokenProvider.generateTokenFromUsername("testuser");
+        String token = tokenProvider.generateTokenFromUsername("testuser", 123L);
 
         boolean isValid = tokenProvider.validateToken(token);
 

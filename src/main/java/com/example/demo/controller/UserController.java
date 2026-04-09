@@ -51,9 +51,9 @@ public class UserController {
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            String jwt = tokenProvider.generateToken(authentication);
 
             User user = userService.login(request);
+            String jwt = tokenProvider.generateTokenFromUsername(user.getUsername(), user.getId());
             LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
                     user.getId(),
                     user.getUsername(),
