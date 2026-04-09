@@ -1,89 +1,93 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件为 Claude Code (claude.ai/code) 提供操作本代码仓库的指引。
 
-## Project Overview
+## 项目概览
 
-A Vue 3 admin dashboard demo built with Element Plus, featuring a complete authentication flow and modular layout. Includes login page, dashboard overview, user management, and system settings modules. Uses modern Vue 3 ecosystem tools: TypeScript, Vue Router 4, Pinia state management, and Vite build tool.
+基于 Vue 3 和 Element Plus 构建的后台管理面板演示项目，包含完整的认证流程和模块化布局。包括登录页面、仪表板概览、用户管理和系统设置模块。使用现代 Vue 3 生态工具：TypeScript、Vue Router 4、Pinia 状态管理和 Vite 构建工具。
 
-## Development Commands
+## 开发命令
 
-Standard npm scripts from `package.json`:
+来自 `package.json` 的标准 npm 脚本：
 
-- `npm run dev` - Start development server at http://localhost:3000
-- `npm run build` - Type-check with vue-tsc then build for production
-- `npm run preview` - Locally preview production build
+- `npm run dev` - 启动开发服务器，访问 http://localhost:3000
+- `npm run build` - 使用 vue-tsc 进行类型检查，然后构建生产版本
+- `npm run preview` - 本地预览生产构建版本
 
-No linting or testing commands are currently configured.
+目前未配置 lint 或测试命令。
 
-## Architecture and Key Patterns
+## 架构与核心模式
 
-### Tech Stack
-- **Vue 3** - Composition API with `<script setup>` syntax
-- **TypeScript** - Type safety
-- **Vue Router 4** - Route management with route-based code splitting
-- **Pinia** - Centralized state management
-- **Element Plus** - UI component library with auto-import
-- **Vite** - Build tool with HMR support
-- **Axios** - HTTP client (installed but not currently used)
+### 技术栈
+- **Vue 3** - 使用 `<script setup>` 语法的组合式 API
+- **TypeScript** - 类型安全
+- **Vue Router 4** - 基于路由的代码分割路由管理
+- **Pinia** - 集中式状态管理
+- **Element Plus** - 自动导入的 UI 组件库
+- **Vite** - 支持 HMR 的构建工具
+- **Axios** - 用于 API 请求的 HTTP 客户端
 
-### Project Structure
-- `src/views/` - Page-level Vue components (login, dashboard, user management, system settings)
-- `src/layouts/` - Layout components (`DashboardLayout.vue` for authenticated areas)
-- `src/router/` - Route definitions and navigation guards
-- `src/stores/` - Pinia stores (`auth.ts` for authentication)
-- `src/assets/styles/` - Global SCSS styles
-- Auto-generated type files: `auto-imports.d.ts` and `components.d.ts`
+### 项目结构
+- `src/views/` - 页面级 Vue 组件（登录、仪表板、用户管理、系统设置）
+- `src/layouts/` - 布局组件（认证区域使用 `DashboardLayout.vue`）
+- `src/router/` - 路由定义和导航守卫
+- `src/stores/` - Pinia 状态管理（`auth.ts` 处理认证）
+- `src/utils/` - 工具函数（`request.ts` 用于 API 调用）
+- `src/assets/styles/` - 全局 SCSS 样式
+- 自动生成的类型文件：`auto-imports.d.ts` 和 `components.d.ts`
 
-### Authentication Flow
-1. Login state managed in `stores/auth.ts` using Pinia
-2. State persisted to `localStorage` (keys: `isLoggedIn`, `username`, `remember`)
-3. Route guard in `router/index.ts` checks `localStorage` directly for authentication
-4. Unauthenticated users accessing protected routes are redirected to `/login`
-5. Authenticated users accessing `/login` are redirected to `/dashboard`
+### 认证流程
+1. 使用 Pinia 在 `stores/auth.ts` 中管理登录状态
+2. JWT 令牌存储在 `localStorage` 中（键名：`token`）
+3. 状态持久化到 `localStorage`（键名：`isLoggedIn`、`username`、`remember`）
+4. `router/index.ts` 中的路由守卫直接检查 `localStorage` 进行认证
+5. 未认证用户访问受保护路由会被重定向到 `/login`
+6. 已认证用户访问 `/login` 会被重定向到 `/dashboard`
+7. API 请求通过请求拦截器自动包含 `Authorization: Bearer <token>` 请求头
 
-**Important**: Both the auth store and route guard interact with `localStorage` - ensure synchronization when modifying authentication logic.
+**重要**：认证状态存储和路由守卫都与 `localStorage` 交互——修改认证逻辑时确保同步。
 
-### Layout Pattern
-- Authenticated routes use `DashboardLayout.vue` layout component
-- Layout features top navigation menu (primary modules) and dynamic side menu (secondary routes)
-- Side menu configuration is centralized in `DashboardLayout.vue` based on active top menu
-- Route structure uses nested routes with layout as parent component
+### 布局模式
+- 认证路由使用 `DashboardLayout.vue` 布局组件
+- 布局包含顶部导航菜单（主模块）和动态侧边菜单（次级路由）
+- 侧边菜单配置在 `DashboardLayout.vue` 中根据活动顶部菜单集中管理
+- 路由结构使用嵌套路由，布局作为父组件
 
-### Routing Configuration
-Routes defined in `router/index.ts` with metadata:
-- `requiresAuth: boolean` - Whether route requires authentication
-- `title: string` - Page title for browser tab
+### 路由配置
+路由定义在 `router/index.ts` 中，包含元数据：
+- `requiresAuth: boolean` - 路由是否需要认证
+- `title: string` - 浏览器标签页标题
 
-Route structure:
-- `/login` - Public login page
-- `/dashboard` - Dashboard module with nested routes (`/dashboard/overview`, `/dashboard/stats`)
-- `/user` - User management module with nested routes (`/user/list`, `/user/role`)
-- `/system` - System settings module with nested routes (`/system/settings`, `/system/logs`)
+路由结构：
+- `/login` - 公共登录页面
+- `/dashboard` - 仪表板模块，包含嵌套路由（`/dashboard/overview`、`/dashboard/stats`）
+- `/user` - 用户管理模块，包含嵌套路由（`/user/list`、`/user/role`）
+- `/system` - 系统设置模块，包含嵌套路由（`/system/settings`、`/system/logs`）
 
-### Key Implementation Details
-- **Path alias**: `@` points to `src/` directory (configured in `vite.config.ts`)
-- **Auto-imports**: Via `unplugin-auto-import` and `unplugin-vue-components` for Element Plus components and Vue composables
-- **Element Plus CSS**: Imported as CSS only (no theme customization) via `importStyle: 'css'` in vite.config.ts
-- **Form validation**: Uses Element Plus form validation rules with `el-form` components
-- **Responsive design**: Custom CSS using Flexbox/Grid for responsive layouts
-- **Icon usage**: Element Plus icons imported from `@element-plus/icons-vue`
-- **Styling**: SCSS with scoped styles using `<style scoped>`
+### 关键实现细节
+- **路径别名**：`@` 指向 `src/` 目录（在 `vite.config.ts` 中配置）
+- **自动导入**：通过 `unplugin-auto-import` 和 `unplugin-vue-components` 自动导入 Element Plus 组件和 Vue 组合式函数
+- **Element Plus CSS**：仅导入 CSS（无主题自定义），通过 `vite.config.ts` 中的 `importStyle: 'css'` 配置
+- **表单验证**：使用 `el-form` 组件配合 Element Plus 表单验证规则
+- **响应式设计**：使用 Flexbox/Grid 自定义 CSS 实现响应式布局
+- **图标使用**：从 `@element-plus/icons-vue` 导入 Element Plus 图标
+- **样式**：使用 `<style scoped>` 的 SCSS 作用域样式
+- **API 代理**：Vite 开发服务器将 `/api` 代理到 `http://192.168.69.132:8080`
 
-### Component Conventions
-- Page components use `<script setup lang="ts">` with TypeScript
-- Element Plus components are auto-imported (no manual imports needed)
-- Icons are manually imported from `@element-plus/icons-vue`
-- SCSS styles use `<style scoped>` for component isolation
-- Form components use `el-form` with validation rules, referenced via `ref`
-- Layout components use computed properties for active menu states based on route
+### 组件规范
+- 页面组件使用 TypeScript 和 `<script setup lang="ts">`
+- Element Plus 组件自动导入（无需手动导入）
+- 图标从 `@element-plus/icons-vue` 手动导入
+- SCSS 样式使用 `<style scoped>` 进行组件隔离
+- 表单组件使用 `el-form` 配合验证规则，通过 `ref` 引用
+- 布局组件使用基于路由的计算属性控制活动菜单状态
 
-## Development Notes
+## 开发注意事项
 
-- Development server runs on port 3000 (configurable in `vite.config.ts`)
-- No ESLint or Prettier configuration currently
-- No testing framework configured
-- Login form accepts any user input (no real authentication validation)
-- Project uses Chinese language for UI labels and comments
-- **API integration**: Axios is installed but not used; planned for future backend integration
-- **Extension plans**: Refer to README.md for suggested feature extensions
+- 开发服务器运行在 3000 端口（可在 `vite.config.ts` 中配置）
+- 目前未配置 ESLint 或 Prettier
+- 目前未配置测试框架
+- 登录表单接受任意用户输入（无真实认证验证）
+- 项目 UI 标签和注释使用中文
+- **API 集成**：Axios 在 `src/utils/request.ts` 中配置，包含用于令牌处理的拦截器
+- **扩展计划**：参考 README.md 了解建议的功能扩展

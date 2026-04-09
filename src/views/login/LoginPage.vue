@@ -45,7 +45,7 @@
         </el-form-item>
       </el-form>
       <div class="login-hint">
-        随便输入用户名密码即可登录
+        账号: test / 密码: 123456
       </div>
     </div>
   </div>
@@ -86,12 +86,12 @@ const handleLogin = async () => {
     await loginFormRef.value.validate()
     loading.value = true
 
-    await authStore.login(loginForm.username, loginForm.remember)
+    await authStore.login(loginForm.username, loginForm.password, loginForm.remember)
 
     ElMessage.success('登录成功！')
     router.push('/dashboard')
-  } catch (error) {
-    // 验证失败
+  } catch (error: any) {
+    // 登录失败，错误消息已在 request 拦截器中显示
   } finally {
     loading.value = false
   }
