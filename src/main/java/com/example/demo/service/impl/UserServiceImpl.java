@@ -107,23 +107,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public IPage<UserWithRolesDTO> getUserList(UserQueryRequest request) {
-        // Create wrapper for count query (without ORDER BY)
-        LambdaQueryWrapper<User> countWrapper = new LambdaQueryWrapper<>();
+        // 创建分页对象
+        Page<User> userPage = new Page<>(request.getPageNum(), request.getPageSize());
 
-        if (StringUtils.hasText(request.getUsername())) {
-            countWrapper.like(User::getUsername, request.getUsername());
-        }
-        if (StringUtils.hasText(request.getEmail())) {
-            countWrapper.like(User::getEmail, request.getEmail());
-        }
-        if (StringUtils.hasText(request.getPhone())) {
-            countWrapper.like(User::getPhone, request.getPhone());
-        }
-
-        // Manually query total count (without ORDER BY)
-        long total = userMapper.selectCount(countWrapper);
-
-        // Create wrapper for data query (with ORDER BY and LIMIT)
+        // 构建查询条件
         LambdaQueryWrapper<User> dataWrapper = new LambdaQueryWrapper<>();
 
         if (StringUtils.hasText(request.getUsername())) {
@@ -138,39 +125,35 @@ public class UserServiceImpl implements UserService {
 
         dataWrapper.orderByDesc(User::getId);
 
-        // Calculate offset
-        int offset = (request.getPageNum() - 1) * request.getPageSize();
+        // 使用 MyBatis-Plus 分页查询
+        IPage<User> resultPage = userMapper.selectPage(userPage, dataWrapper);
 
-        // Query data with limit
-        dataWrapper.last("LIMIT " + request.getPageSize() + " OFFSET " + offset);
-        List<User> userList = userMapper.selectList(dataWrapper);
-
-        // Convert User to UserWithRolesDTO
-        List<UserWithRolesDTO> dtoList = userList.stream().map(user -> {
+        // 转换 User 为 UserWithRolesDTO
+        List<UserWithRolesDTO> dtoList = resultPage.getRecords().stream().map(user -> {
             UserWithRolesDTO dto = new UserWithRolesDTO();
             BeanUtils.copyProperties(user, dto);
             return dto;
         }).collect(Collectors.toList());
 
-        // Batch query roles for all users
+        // 批量查询所有用户的角色
         if (!dtoList.isEmpty()) {
             List<Long> userIds = dtoList.stream().map(UserWithRolesDTO::getId).collect(Collectors.toList());
 
-            // Get all user-role mappings
+            // 获取所有用户-角色映射
             List<UserRole> userRoles = userRoleMapper.findByUserIds(userIds);
 
             if (!CollectionUtils.isEmpty(userRoles)) {
-                // Get all unique role ids
+                // 获取所有唯一的角色ID
                 Set<Long> roleIds = userRoles.stream()
                         .map(UserRole::getRoleId)
                         .collect(Collectors.toSet());
 
-                // Batch query all roles
+                // 批量查询所有角色
                 List<Role> roles = roleService.listByIds(roleIds);
                 Map<Long, Role> roleMap = roles.stream()
                         .collect(Collectors.toMap(Role::getId, r -> r));
 
-                // Group roles by user id
+                // 按用户ID分组角色
                 Map<Long, List<Role>> userRolesMap = new HashMap<>();
                 for (UserRole ur : userRoles) {
                     Role role = roleMap.get(ur.getRoleId());
@@ -179,39 +162,26 @@ public class UserServiceImpl implements UserService {
                     }
                 }
 
-                // Set roles for each DTO
+                // 为每个 DTO 设置角色
                 for (UserWithRolesDTO dto : dtoList) {
                     dto.setRoles(userRolesMap.getOrDefault(dto.getId(), Collections.emptyList()));
                 }
             } else {
-                // No roles found, set empty list
+                // 没有找到角色，设置空列表
                 for (UserWithRolesDTO dto : dtoList) {
                     dto.setRoles(Collections.emptyList());
                 }
             }
         }
 
-        // Calculate total pages
-        long pages = total / request.getPageSize();
-        if (total % request.getPageSize() != 0) {
-            pages++;
-        }
+        // 创建结果分页对象
+        Page<UserWithRolesDTO> dtoPage = new Page<>();
+        dtoPage.setRecords(dtoList);
+        dtoPage.setTotal(resultPage.getTotal());
+        dtoPage.setSize(resultPage.getSize());
+        dtoPage.setCurrent(resultPage.getCurrent());
+        // dtoPage.setPages(resultPage.getPages());
 
-        // Create result page
-        Page<UserWithRolesDTO> resultPage = new Page<>();
-        resultPage.setRecords(dtoList);
-        resultPage.setTotal(total);
-        resultPage.setSize(request.getPageSize());
-        resultPage.setCurrent(request.getPageNum());
-        resultPage.setPages(pages);
-
-        System.out.println("========== Debug Pagination Info ==========");
-        System.out.println("total: " + total);
-        System.out.println("size: " + request.getPageSize());
-        System.out.println("current: " + request.getPageNum());
-        System.out.println("pages: " + pages);
-        System.out.println("records.size(): " + dtoList.size());
-
-        return resultPage;
+        return dtoPage;
     }
 }
