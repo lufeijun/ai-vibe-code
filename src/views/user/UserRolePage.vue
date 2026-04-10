@@ -134,6 +134,7 @@
     >
       <div class="permission-dialog">
         <el-tree
+          ref="permissionTreeRef"
           :data="permissionTree"
           show-checkbox
           node-key="id"
@@ -144,7 +145,7 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="permissionDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSavePermission">保存</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="handleSavePermission">保存</el-button>
         </div>
       </template>
     </el-dialog>
@@ -203,6 +204,18 @@ interface PageResult<T> {
   pages: number
 }
 
+interface PermissionTreeItem {
+  id: number
+  name: string
+  label?: string
+  children?: PermissionTreeItem[]
+}
+
+interface RoleAssignPermissionsRequest {
+  roleId: number
+  permissionIds: number[]
+}
+
 // 状态
 const loading = ref(false)
 const roleList = ref<RoleItem[]>([])
@@ -211,6 +224,8 @@ const roleDialogVisible = ref(false)
 const isEdit = ref(false)
 const roleFormRef = ref<FormInstance>()
 const editingRoleId = ref<number | null>(null)
+const permissionTreeRef = ref()
+const currentPermissionRole = ref<RoleItem | null>(null)
 
 // 查询参数 - 使用数字类型处理状态
 const queryParams = reactive<{
@@ -373,39 +388,33 @@ const handleSaveRole = async () => {
 
 // 权限对话框相关
 const permissionDialogVisible = ref(false)
-const permissionTree = ref([
-  {
-    id: 1,
-    label: '用户管理',
-    children: [
-      { id: 11, label: '用户列表' },
-      { id: 12, label: '角色管理' },
-      { id: 13, label: '权限分配' }
-    ]
-  },
-  {
-    id: 2,
-    label: '系统设置',
-    children: [
-      { id: 21, label: '系统配置' },
-      { id: 22, label: '操作日志' },
-      { id: 23, label: '数据备份' }
-    ]
-  },
-  {
-    id: 3,
-    label: '内容管理',
-    children: [
-      { id: 31, label: '文章管理' },
-      { id: 32, label: '分类管理' },
-      { id: 33, label: '评论管理' }
-    ]
-  }
-])
-const defaultCheckedKeys = ref([11, 12, 21, 31])
+const permissionTree = ref<PermissionTreeItem[]>([])
+const defaultCheckedKeys = ref<number[]>([])
 const treeProps = {
   children: 'children',
-  label: 'label'
+  label: 'name'
+}
+
+// 获取权限树
+const fetchPermissionTree = async () => {
+  try {
+    const res = await request.get<{ code: number; message: string; data: PermissionTreeItem[] }>(
+      '/permission/tree'
+    )
+    if (res.code === 200) {
+      // 确保每个节点都有 label 字段（兼容 el-tree）
+      const addLabel = (items: PermissionTreeItem[]): PermissionTreeItem[] => {
+        return items.map(item => ({
+          ...item,
+          label: item.name,
+          children: item.children ? addLabel(item.children) : undefined
+        }))
+      }
+      permissionTree.value = addLabel(res.data)
+    }
+  } catch (error) {
+    ElMessage.error('获取权限树失败')
+  }
 }
 
 // 状态变更
@@ -415,17 +424,48 @@ const handleStatusChange = (row: any) => {
 }
 
 // 配置权限
-const handlePermission = (row: any) => {
+const handlePermission = async (row: RoleItem) => {
   console.log('配置权限:', row)
+  currentPermissionRole.value = row
+  defaultCheckedKeys.value = []
+  await fetchPermissionTree()
   permissionDialogVisible.value = true
-  // TODO: 根据角色加载权限数据
+  // TODO: 根据角色加载已选中的权限数据（调用获取角色权限接口）
 }
 
 // 保存权限配置
-const handleSavePermission = () => {
-  console.log('保存权限配置')
-  permissionDialogVisible.value = false
-  // TODO: 调用API保存权限
+const handleSavePermission = async () => {
+  if (!currentPermissionRole.value || !permissionTreeRef.value) {
+    return
+  }
+
+  // 获取所有选中的节点 key
+  const checkedKeys = permissionTreeRef.value.getCheckedKeys(false) as number[]
+  // 获取半选中的节点 key（父节点）
+  const halfCheckedKeys = permissionTreeRef.value.getHalfCheckedKeys() as number[]
+  // 合并所有选中的权限 ID
+  const allPermissionIds = [...checkedKeys, ...halfCheckedKeys]
+
+  const requestData: RoleAssignPermissionsRequest = {
+    roleId: currentPermissionRole.value.id,
+    permissionIds: allPermissionIds
+  }
+
+  submitLoading.value = true
+  try {
+    const res = await request.post<{ code: number; message: string }>(
+      '/role/assign-permissions',
+      requestData
+    )
+    if (res.code === 200) {
+      ElMessage.success('权限分配成功')
+      permissionDialogVisible.value = false
+    }
+  } catch (error) {
+    ElMessage.error('权限分配失败')
+  } finally {
+    submitLoading.value = false
+  }
 }
 
 // 删除角色
