@@ -4,7 +4,7 @@
       <h2 class="page-title">角色管理</h2>
       <div class="page-actions">
         <el-button type="primary" :icon="Plus" @click="handleAdd">新增角色</el-button>
-        <el-button type="success" :icon="Refresh" @click="fetchRoleList">刷新</el-button>
+        <el-button type="success" :icon="Refresh" @click="handleRefresh">刷新</el-button>
       </div>
     </div>
 
@@ -304,6 +304,13 @@ const handleSearch = () => {
   fetchRoleList()
 }
 
+// 刷新：重置权限树缓存并刷新列表
+const handleRefresh = () => {
+  permissionTreeLoaded.value = false
+  permissionTree.value = []
+  fetchRoleList()
+}
+
 // 重置
 const handleReset = () => {
   queryParams.name = ''
@@ -389,6 +396,7 @@ const handleSaveRole = async () => {
 // 权限对话框相关
 const permissionDialogVisible = ref(false)
 const permissionTree = ref<PermissionTreeItem[]>([])
+const permissionTreeLoaded = ref(false)
 const defaultCheckedKeys = ref<number[]>([])
 const treeProps = {
   children: 'children',
@@ -397,6 +405,11 @@ const treeProps = {
 
 // 获取权限树
 const fetchPermissionTree = async () => {
+  // 如果已经加载过，直接返回
+  if (permissionTreeLoaded.value && permissionTree.value.length > 0) {
+    return
+  }
+
   try {
     const res = await request.get<{ code: number; message: string; data: PermissionTreeItem[] }>(
       '/permission/tree'
@@ -411,6 +424,7 @@ const fetchPermissionTree = async () => {
         }))
       }
       permissionTree.value = addLabel(res.data)
+      permissionTreeLoaded.value = true
     }
   } catch (error) {
     ElMessage.error('获取权限树失败')
