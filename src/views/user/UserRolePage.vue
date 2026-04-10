@@ -140,7 +140,14 @@
           node-key="id"
           :default-checked-keys="defaultCheckedKeys"
           :props="treeProps"
-        />
+        >
+          <template #default="{ node, data }">
+            <span class="tree-node-content">
+              <span>{{ node.label }}</span>
+              <el-tag v-if="data.type === 'button'" type="info" size="small" class="function-tag">功能</el-tag>
+            </span>
+          </template>
+        </el-tree>
       </div>
       <template #footer>
         <div class="dialog-footer">
@@ -208,6 +215,7 @@ interface PermissionTreeItem {
   id: number
   name: string
   label?: string
+  type?: string
   children?: PermissionTreeItem[]
 }
 
@@ -323,6 +331,7 @@ const handleSearch = () => {
 const handleRefresh = () => {
   permissionTreeLoaded.value = false
   permissionTree.value = []
+  defaultCheckedKeys.value = []
   fetchRoleList()
 }
 
@@ -430,7 +439,7 @@ const fetchPermissionTree = async () => {
       '/permission/tree'
     )
     if (res.code === 200) {
-      // 确保每个节点都有 label 字段（兼容 el-tree）
+      // 确保每个节点都有 label 字段（兼容 el-tree），并保留 type 字段
       const addLabel = (items: PermissionTreeItem[]): PermissionTreeItem[] => {
         return items.map(item => ({
           ...item,
@@ -599,5 +608,15 @@ onMounted(() => {
   max-height: 400px;
   overflow-y: auto;
   padding: 10px;
+}
+
+.tree-node-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.function-tag {
+  margin-left: 6px;
 }
 </style>
