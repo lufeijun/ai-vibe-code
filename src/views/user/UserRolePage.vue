@@ -153,7 +153,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import {
   Plus,
   Refresh,
@@ -214,6 +214,21 @@ interface PermissionTreeItem {
 interface RoleAssignPermissionsRequest {
   roleId: number
   permissionIds: number[]
+}
+
+interface RolePermissionItem {
+  id: number
+  parentId: number
+  name: string
+  code: string
+  type: string
+  level: number
+  path: string | null
+  icon: string | null
+  sortOrder: number
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 // 状态
@@ -431,6 +446,22 @@ const fetchPermissionTree = async () => {
   }
 }
 
+// 获取角色已分配的权限
+const fetchRolePermissions = async (roleId: number) => {
+  try {
+    const res = await request.post<{ code: number; message: string; data: RolePermissionItem[] }>(
+      '/role/get/permissions',
+      { roleId }
+    )
+    if (res.code === 200) {
+      // 提取所有权限 ID
+      defaultCheckedKeys.value = res.data.map(item => item.id)
+    }
+  } catch (error) {
+    ElMessage.error('获取角色权限失败')
+  }
+}
+
 // 状态变更
 const handleStatusChange = (row: any) => {
   console.log('角色状态变更:', row.id, row.enabled)
@@ -443,8 +474,22 @@ const handlePermission = async (row: RoleItem) => {
   currentPermissionRole.value = row
   defaultCheckedKeys.value = []
   await fetchPermissionTree()
+  await fetchRolePermissions(row.id)
+
+  // 等待 DOM 更新后设置树的选中状态
   permissionDialogVisible.value = true
-  // TODO: 根据角色加载已选中的权限数据（调用获取角色权限接口）
+  await nextTick()
+  if (permissionTreeRef.value) {
+    // 先清空所有选中状态
+    permissionTreeRef.value.setCheckedKeys([])
+    // 设置新的选中状态
+    defaultCheckedKeys.value.forEach(id => {
+      const node = permissionTreeRef.value.getNode(id)
+      if (node) {
+        permissionTreeRef.value.setChecked(node, true, false)
+      }
+    })
+  }
 }
 
 // 保存权限配置
