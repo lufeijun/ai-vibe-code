@@ -144,7 +144,18 @@
           <template #default="{ node, data }">
             <span class="tree-node-content">
               <span>{{ node.label }}</span>
-              <el-tag v-if="data.type === 'button'" type="info" size="small" class="function-tag">功能</el-tag>
+              <el-tag
+                v-if="data.level === 4 && data.type === 'menu'"
+                type="success"
+                size="small"
+                class="node-tag"
+              >菜单</el-tag>
+              <el-tag
+                v-if="data.level === 4 && data.type === 'button'"
+                type="info"
+                size="small"
+                class="node-tag"
+              >功能</el-tag>
             </span>
           </template>
         </el-tree>
@@ -216,6 +227,7 @@ interface PermissionTreeItem {
   name: string
   label?: string
   type?: string
+  level?: number
   children?: PermissionTreeItem[]
 }
 
@@ -616,7 +628,7 @@ onMounted(() => {
   gap: 6px;
 }
 
-.function-tag {
+.node-tag {
   margin-left: 6px;
 }
 </style>
