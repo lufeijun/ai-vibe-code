@@ -3,31 +3,51 @@
     <div class="page-header">
       <h2 class="page-title">角色管理</h2>
       <div class="page-actions">
-        <el-button type="primary" :icon="Plus">新增角色</el-button>
-        <el-button type="success" :icon="Refresh">刷新</el-button>
+        <el-button type="primary" :icon="Plus" @click="handleAdd">新增角色</el-button>
+        <el-button type="success" :icon="Refresh" @click="fetchRoleList">刷新</el-button>
       </div>
     </div>
 
     <div class="page-content">
       <el-card class="content-card">
+        <!-- 搜索表单 -->
+        <el-form :model="queryParams" class="search-form" inline>
+          <el-form-item label="角色名称">
+            <el-input v-model="queryParams.name" placeholder="请输入角色名称" clearable />
+          </el-form-item>
+          <el-form-item label="角色代码">
+            <el-input v-model="queryParams.code" placeholder="请输入角色代码" clearable />
+          </el-form-item>
+          
+          <el-form-item label="状态">
+            <el-select  style="width: 100px" v-model="queryParams.enabled" placeholder="请选择状态" clearable>
+              <el-option label="请选择" v-bind:value="-1" />
+              <el-option label="启用" v-bind:value="1" />
+              <el-option label="禁用" v-bind:value="2" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item>
+            <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
+            <el-button :icon="RefreshRight" @click="handleReset">重置</el-button>
+          </el-form-item>
+        </el-form>
+
+        
         <!-- 角色表格 -->
-        <el-table :data="roleList" border stripe style="width: 100%">
+        <el-table :data="roleList" border stripe style="width: 100%" v-loading="loading">
           <el-table-column prop="id" label="ID" width="80" align="center" />
           <el-table-column prop="name" label="角色名称" width="150" />
           <el-table-column prop="code" label="角色代码" width="120" />
           <el-table-column prop="description" label="角色描述" min-width="200" />
-          <el-table-column prop="userCount" label="用户数量" width="100" align="center" />
-          <el-table-column prop="status" label="状态" width="100">
+          <el-table-column prop="enabled" label="状态" width="100">
             <template #default="{ row }">
-              <el-switch
-                v-model="row.status"
-                :active-value="true"
-                :inactive-value="false"
-                @change="handleStatusChange(row)"
-              />
+              <el-tag :type="row.enabled ? 'success' : 'danger'">
+                {{ row.enabled ? '启用' : '禁用' }}
+              </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="createTime" label="创建时间" width="180" />
+          <el-table-column prop="createdAt" label="创建时间" width="180" />
           <el-table-column label="操作" width="250" align="center" fixed="right">
             <template #default="{ row }">
               <el-button type="primary" size="small" :icon="Edit" @click="handleEdit(row)">
@@ -64,6 +84,47 @@
       </el-card>
     </div>
 
+    <!-- 新增/编辑角色对话框 -->
+    <el-dialog
+      v-model="roleDialogVisible"
+      :title="isEdit ? '编辑角色' : '新增角色'"
+      width="500px"
+      destroy-on-close
+    >
+      <el-form
+        ref="roleFormRef"
+        :model="roleForm"
+        :rules="roleFormRules"
+        label-width="80px"
+      >
+        <el-form-item label="角色名称" prop="name">
+          <el-input v-model="roleForm.name" placeholder="请输入角色名称" />
+        </el-form-item>
+        <el-form-item label="角色代码" prop="code">
+          <el-input v-model="roleForm.code" placeholder="请输入角色代码" />
+        </el-form-item>
+        <el-form-item label="角色描述" prop="description">
+          <el-input
+            v-model="roleForm.description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入角色描述"
+          />
+        </el-form-item>
+        <el-form-item label="状态" prop="enabled">
+          <el-switch v-model="roleForm.enabled" active-text="启用" inactive-text="禁用" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="roleDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="handleSaveRole">
+            保存
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- 权限配置对话框（示例） -->
     <el-dialog
       v-model="permissionDialogVisible"
@@ -91,61 +152,224 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import {
   Plus,
   Refresh,
   Edit,
   Delete,
-  Setting
+  Setting,
+  Search,
+  RefreshRight
 } from '@element-plus/icons-vue'
+import request from '@/utils/request'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 
-// 角色列表数据（模拟数据）
-const roleList = ref([
-  {
-    id: 1,
-    name: '超级管理员',
-    code: 'admin',
-    description: '拥有所有权限，可管理系统所有功能',
-    userCount: 1,
-    status: true,
-    createTime: '2024-01-01 10:00:00'
-  },
-  {
-    id: 2,
-    name: '普通管理员',
-    code: 'manager',
-    description: '拥有部分管理权限，可管理用户和内容',
-    userCount: 5,
-    status: true,
-    createTime: '2024-01-02 14:30:00'
-  },
-  {
-    id: 3,
-    name: '普通用户',
-    code: 'user',
-    description: '仅拥有基本操作权限',
-    userCount: 100,
-    status: true,
-    createTime: '2024-01-03 09:15:00'
-  },
-  {
-    id: 4,
-    name: '访客',
-    code: 'guest',
-    description: '只读权限，不可进行任何修改操作',
-    userCount: 50,
-    status: false,
-    createTime: '2024-01-04 16:45:00'
-  }
-])
+// 类型定义
+interface RoleItem {
+  id: number
+  name: string
+  code: string
+  description: string
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+interface RoleQueryRequest {
+  name?: string
+  code?: string
+  enabled?: boolean
+  pageNum?: number
+  pageSize?: number
+}
+
+interface RoleAddRequest {
+  name: string
+  code?: string
+  description?: string
+  enabled?: boolean
+}
+
+interface RoleUpdateRequest extends RoleAddRequest {
+  id?: number
+}
+
+interface PageResult<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}
+
+// 状态
+const loading = ref(false)
+const roleList = ref<RoleItem[]>([])
+const submitLoading = ref(false)
+const roleDialogVisible = ref(false)
+const isEdit = ref(false)
+const roleFormRef = ref<FormInstance>()
+const editingRoleId = ref<number | null>(null)
+
+// 查询参数 - 使用数字类型处理状态
+const queryParams = reactive<{
+  name?: string
+  code?: string
+  enabled?: number
+  pageNum?: number
+  pageSize?: number
+}>({
+  name: '',
+  code: '',
+  enabled: -1,
+  pageNum: 1,
+  pageSize: 10
+})
 
 // 分页配置
 const pagination = reactive({
   current: 1,
   size: 10,
-  total: 4
+  total: 0
 })
+
+// 角色表单
+const roleForm = reactive<RoleUpdateRequest>({
+  id: undefined,
+  name: '',
+  code: '',
+  description: '',
+  enabled: true
+})
+
+// 表单验证规则
+const roleFormRules: FormRules<RoleAddRequest> = {
+  name: [
+    { required: true, message: '请输入角色名称', trigger: 'blur' }
+  ]
+}
+
+// 获取角色列表
+const fetchRoleList = async () => {
+  loading.value = true
+  try {
+    // 构建请求参数，处理 enabled 字段（字符串转布尔值）
+    const requestParams: RoleQueryRequest = {
+      name: queryParams.name || undefined,
+      code: queryParams.code || undefined,
+      enabled:
+        queryParams.enabled == -1 
+          ? undefined
+          : (queryParams.enabled === 1 ? true : false),
+      pageNum: queryParams.pageNum,
+      pageSize: queryParams.pageSize
+    }
+    const res = await request.post<{ code: number; message: string; data: PageResult<RoleItem> }>(
+      '/role/list',
+      requestParams
+    )
+    if (res.code === 200) {
+      roleList.value = res.data.records
+      pagination.total = res.data.total
+      pagination.current = res.data.current
+      pagination.size = res.data.size
+    }
+  } catch (error) {
+    ElMessage.error('获取角色列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 搜索
+const handleSearch = () => {
+  queryParams.pageNum = 1
+  pagination.current = 1
+  fetchRoleList()
+}
+
+// 重置
+const handleReset = () => {
+  queryParams.name = ''
+  queryParams.code = ''
+  queryParams.enabled = -1
+  queryParams.pageNum = 1
+  queryParams.pageSize = 10
+  pagination.current = 1
+  fetchRoleList()
+}
+
+const handleChange = (val) => {
+  console.log('改变后的值:', val)
+  console.log('值的类型:', typeof val)
+  console.log('queryParams.enabled:', queryParams.enabled)
+}
+
+// 新增角色
+const handleAdd = () => {
+  isEdit.value = false
+  editingRoleId.value = null
+  roleForm.id = undefined
+  roleForm.name = ''
+  roleForm.code = ''
+  roleForm.description = ''
+  roleForm.enabled = true
+  roleDialogVisible.value = true
+}
+
+// 编辑角色
+const handleEdit = (row: RoleItem) => {
+  isEdit.value = true
+  editingRoleId.value = row.id
+  roleForm.id = row.id
+  roleForm.name = row.name
+  roleForm.code = row.code
+  roleForm.description = row.description
+  roleForm.enabled = row.enabled
+  roleDialogVisible.value = true
+}
+
+// 保存角色
+const handleSaveRole = async () => {
+  if (!roleFormRef.value) return
+
+  await roleFormRef.value.validate(async (valid) => {
+    if (valid) {
+      submitLoading.value = true
+      try {
+        let res
+        if (isEdit.value && editingRoleId.value) {
+          // 编辑模式 - 调用更新接口
+          res = await request.post<{ code: number; message: string }>(
+            `/role/update/${editingRoleId.value}`,
+            roleForm
+          )
+          if (res.code === 200) {
+            ElMessage.success('更新角色成功')
+          }
+        } else {
+          // 新增模式 - 调用新增接口
+          res = await request.post<{ code: number; message: string }>(
+            '/role/add',
+            roleForm
+          )
+          if (res.code === 200) {
+            ElMessage.success('新增角色成功')
+          }
+        }
+        if (res?.code === 200) {
+          roleDialogVisible.value = false
+          fetchRoleList()
+        }
+      } catch (error) {
+        ElMessage.error(isEdit.value ? '更新角色失败' : '新增角色失败')
+      } finally {
+        submitLoading.value = false
+      }
+    }
+  })
+}
 
 // 权限对话框相关
 const permissionDialogVisible = ref(false)
@@ -186,14 +410,8 @@ const treeProps = {
 
 // 状态变更
 const handleStatusChange = (row: any) => {
-  console.log('角色状态变更:', row.id, row.status)
+  console.log('角色状态变更:', row.id, row.enabled)
   // TODO: 调用API更新状态
-}
-
-// 编辑角色
-const handleEdit = (row: any) => {
-  console.log('编辑角色:', row)
-  // TODO: 打开编辑对话框
 }
 
 // 配置权限
@@ -218,17 +436,23 @@ const handleDelete = (row: any) => {
 
 // 分页大小改变
 const handleSizeChange = (size: number) => {
+  queryParams.pageSize = size
   pagination.size = size
-  console.log('每页大小改变:', size)
-  // TODO: 重新获取数据
+  fetchRoleList()
 }
 
 // 当前页改变
 const handleCurrentChange = (page: number) => {
+  queryParams.pageNum = page
   pagination.current = page
-  console.log('当前页改变:', page)
-  // TODO: 重新获取数据
+  fetchRoleList()
 }
+
+// 初始化
+onMounted(() => {
+  fetchRoleList()
+})
+
 </script>
 
 <style scoped>
