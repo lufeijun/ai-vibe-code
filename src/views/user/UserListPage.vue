@@ -3,7 +3,7 @@
     <div class="page-header">
       <h2 class="page-title">用户列表</h2>
       <div class="page-actions">
-        <el-button type="primary" :icon="Plus">新增用户</el-button>
+        <el-button type="primary" :icon="Plus" @click="handleAdd">新增用户</el-button>
         <el-button type="success" :icon="Refresh" @click="fetchUserList">刷新</el-button>
       </div>
     </div>
@@ -36,6 +36,17 @@
               @keyup.enter="handleSearch"
             />
           </el-form-item>
+          <el-form-item label="在职状态">
+            <el-select
+              v-model="searchForm.isEmployed"
+              placeholder="请选择"
+              clearable
+              style="width: 120px"
+            >
+              <el-option label="在职" :value="true" />
+              <el-option label="离职" :value="false" />
+            </el-select>
+          </el-form-item>
           <el-form-item>
             <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
             <el-button :icon="Refresh" @click="handleReset">重置</el-button>
@@ -56,7 +67,17 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="roles" label="角色" width="120">
+          <el-table-column prop="hireDate" label="入职日期" width="120">
+            <template #default="{ row }">
+              {{ row.hireDate || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="resignationDate" label="离职日期" width="120">
+            <template #default="{ row }">
+              {{ row.resignationDate || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="roles" label="角色" width="150">
             <template #default="{ row }">
               <el-tag v-for="role in row.roles" :key="role.id" :type="role.code === 'admin' ? 'danger' : 'info'" size="small" style="margin-right: 4px;">
                 {{ role.name }}
@@ -68,15 +89,9 @@
               {{ formatDate(row.createdAt) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="100" align="center" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" size="small" :icon="Edit">编辑</el-button>
-              <el-button
-                type="danger"
-                size="small"
-                :icon="Delete"
-                @click="handleDelete(row)"
-              >删除</el-button>
+              <el-button type="primary" size="small" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -95,28 +110,81 @@
         </div>
       </el-card>
     </div>
+
+    <!-- 新增/编辑用户对话框 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEdit ? '编辑用户' : '新增用户'"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
+        <el-form-item label="用户名" prop="username" v-if="!isEdit">
+          <el-input v-model="formData.username" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password" v-if="!isEdit">
+          <el-input v-model="formData.password" type="password" placeholder="请输入密码（默认123456）" />
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="formData.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="formData.phone" placeholder="请输入手机号" />
+        </el-form-item>
+        <el-form-item label="城市" prop="city">
+          <el-input v-model="formData.city" placeholder="请输入城市" />
+        </el-form-item>
+        <el-form-item label="在职状态" prop="isEmployed">
+          <el-switch v-model="formData.isEmployed" active-text="在职" inactive-text="离职" />
+        </el-form-item>
+        <el-form-item label="入职日期" prop="hireDate">
+          <el-date-picker
+            v-model="formData.hireDate"
+            type="date"
+            placeholder="请选择入职日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="离职日期" prop="resignationDate">
+          <el-date-picker
+            v-model="formData.resignationDate"
+            type="date"
+            placeholder="请选择离职日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="角色" prop="roleIds">
+          <el-select v-model="formData.roleIds" multiple placeholder="请选择角色" style="width: 100%">
+            <el-option
+              v-for="role in allRoles"
+              :key="role.id"
+              :label="role.name"
+              :value="role.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitLoading">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
-import {
-  Plus,
-  Refresh,
-  Search,
-  Edit,
-  Delete
-} from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, reactive, onMounted } from 'vue'
+import { Plus, Refresh, Search, Edit } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import request from '@/utils/request'
 
-// 用户查询参数接口
-interface UserQueryParams {
-  username?: string
-  email?: string
-  phone?: string
-  pageNum: number
-  pageSize: number
+// 角色接口
+interface Role {
+  id: number
+  name: string
+  code: string
 }
 
 // 用户数据接口
@@ -125,9 +193,22 @@ interface User {
   username: string
   email: string
   phone: string
-  role: string
-  status: string
-  createTime: string
+  city: string
+  isEmployed: boolean
+  hireDate: string
+  resignationDate: string
+  roles: Role[]
+  createdAt: string
+}
+
+// 用户查询参数接口
+interface UserQueryParams {
+  username?: string
+  email?: string
+  phone?: string
+  isEmployed?: boolean
+  pageNum: number
+  pageSize: number
 }
 
 // 分页信息接口
@@ -141,7 +222,8 @@ interface PaginationInfo {
 const searchForm = reactive({
   username: '',
   email: '',
-  phone: ''
+  phone: '',
+  isEmployed: undefined as boolean | undefined
 })
 
 // 加载状态
@@ -150,12 +232,48 @@ const loading = ref(false)
 // 用户列表数据
 const userList = ref<User[]>([])
 
+// 所有角色列表
+const allRoles = ref<Role[]>([])
+
 // 分页配置
 const pagination = reactive<PaginationInfo>({
   pageNum: 1,
   pageSize: 10,
   total: 0
 })
+
+// 对话框相关
+const dialogVisible = ref(false)
+const isEdit = ref(false)
+const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
+
+// 表单数据
+const formData = reactive({
+  id: 0,
+  username: '',
+  password: '',
+  email: '',
+  phone: '',
+  city: '',
+  isEmployed: true,
+  hireDate: '',
+  resignationDate: '',
+  roleIds: [] as number[]
+})
+
+// 表单验证规则
+const formRules: FormRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' }
+  ],
+  email: [
+    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+  ],
+  phone: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ]
+}
 
 // 格式化日期
 const formatDate = (dateStr: string) => {
@@ -171,6 +289,18 @@ const formatDate = (dateStr: string) => {
   })
 }
 
+// 获取所有角色
+const fetchAllRoles = async () => {
+  try {
+    const res: any = await request.get('/role/list')
+    if (res.code === 200) {
+      allRoles.value = res.data || []
+    }
+  } catch (error) {
+    console.error('获取角色列表失败:', error)
+  }
+}
+
 // 获取用户列表
 const fetchUserList = async () => {
   loading.value = true
@@ -180,7 +310,6 @@ const fetchUserList = async () => {
       pageSize: pagination.pageSize
     }
 
-    // 只添加有值的参数
     if (searchForm.username.trim()) {
       params.username = searchForm.username.trim()
     }
@@ -189,6 +318,9 @@ const fetchUserList = async () => {
     }
     if (searchForm.phone.trim()) {
       params.phone = searchForm.phone.trim()
+    }
+    if (searchForm.isEmployed !== undefined) {
+      params.isEmployed = searchForm.isEmployed
     }
 
     const res: any = await request.post('/user/list', params)
@@ -220,6 +352,7 @@ const handleReset = () => {
   searchForm.username = ''
   searchForm.email = ''
   searchForm.phone = ''
+  searchForm.isEmployed = undefined
   pagination.pageNum = 1
   fetchUserList()
 }
@@ -237,37 +370,89 @@ const handleCurrentChange = (page: number) => {
   fetchUserList()
 }
 
-// 删除用户
-const handleDelete = (row: User) => {
-  ElMessageBox.confirm(
-    `确定要删除用户 "${row.username}" 吗？`,
-    '警告',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+// 新增用户
+const handleAdd = () => {
+  isEdit.value = false
+  Object.assign(formData, {
+    id: 0,
+    username: '',
+    password: '',
+    email: '',
+    phone: '',
+    city: '',
+    isEmployed: true,
+    hireDate: '',
+    resignationDate: '',
+    roleIds: []
+  })
+  dialogVisible.value = true
+}
+
+// 编辑用户
+const handleEdit = async (row: User) => {
+  isEdit.value = true
+  try {
+    const res: any = await request.get(`/user/${row.id}`)
+    if (res.code === 200) {
+      const user = res.data
+      Object.assign(formData, {
+        id: user.id,
+        username: user.username,
+        password: '',
+        email: user.email || '',
+        phone: user.phone || '',
+        city: user.city || '',
+        isEmployed: user.isEmployed !== false,
+        hireDate: user.hireDate || '',
+        resignationDate: user.resignationDate || '',
+        roleIds: (user.roles || []).map((r: Role) => r.id)
+      })
+      dialogVisible.value = true
+    } else {
+      ElMessage.error(res.message || '获取用户信息失败')
     }
-  ).then(() => {
-    // TODO: 调用删除API
-    ElMessage.success('删除成功')
-    fetchUserList()
-  }).catch(() => {
-    // 取消删除
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+    ElMessage.error('获取用户信息失败')
+  }
+}
+
+// 提交表单
+const handleSubmit = async () => {
+  if (!formRef.value) return
+
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    submitLoading.value = true
+    try {
+      let res: any
+      if (isEdit.value) {
+        res = await request.post('/user/update', formData)
+      } else {
+        res = await request.post('/user/create', formData)
+      }
+
+      if (res.code === 200) {
+        ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
+        dialogVisible.value = false
+        fetchUserList()
+      } else {
+        ElMessage.error(res.message || '操作失败')
+      }
+    } catch (error) {
+      console.error('操作失败:', error)
+      ElMessage.error('操作失败')
+    } finally {
+      submitLoading.value = false
+    }
   })
 }
 
 // 页面加载时获取数据
 onMounted(() => {
+  fetchAllRoles()
   fetchUserList()
-})
-
-// 监听分页变化（可选，用于调试）
-watch(() => pagination.pageNum, (newVal) => {
-  console.log('当前页:', newVal)
-})
-
-watch(() => pagination.pageSize, (newVal) => {
-  console.log('每页条数:', newVal)
 })
 </script>
 
