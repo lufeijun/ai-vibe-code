@@ -109,7 +109,7 @@
         <template #header>
           <div class="activities-header">
             <span>最近活动</span>
-            <el-button type="text" size="small">查看全部</el-button>
+            <el-button link size="small">查看全部</el-button>
           </div>
         </template>
         <el-timeline>

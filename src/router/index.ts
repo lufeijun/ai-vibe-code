@@ -26,6 +26,7 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       {
         path: '',
+        name: 'DashboardIndex',
         redirect: '/dashboard/overview'
       },
       {
@@ -59,6 +60,7 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       {
         path: '',
+        name: 'UserIndex',
         redirect: '/user/list'
       },
       {
@@ -92,6 +94,7 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       {
         path: '',
+        name: 'SystemIndex',
         redirect: '/system/settings'
       },
       {

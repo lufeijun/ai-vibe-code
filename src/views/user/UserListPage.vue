@@ -58,7 +58,7 @@
           </el-table-column>
           <el-table-column prop="roles" label="角色" width="120">
             <template #default="{ row }">
-              <el-tag v-for="role in row.roles" :key="role.id" :type="role.code === 'admin' ? 'danger' : ''" size="small" style="margin-right: 4px;">
+              <el-tag v-for="role in row.roles" :key="role.id" :type="role.code === 'admin' ? 'danger' : 'info'" size="small" style="margin-right: 4px;">
                 {{ role.name }}
               </el-tag>
             </template>

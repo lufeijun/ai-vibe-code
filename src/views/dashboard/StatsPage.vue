@@ -153,7 +153,7 @@
         <template #header>
           <div class="table-header">
             <span>详细数据</span>
-            <el-button type="text" size="small" :icon="Download">导出数据</el-button>
+            <el-button link size="small" :icon="Download">导出数据</el-button>
           </div>
         </template>
         <el-table :data="tableData" border stripe style="width: 100%">

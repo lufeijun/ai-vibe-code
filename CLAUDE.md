@@ -91,3 +91,20 @@
 - 项目 UI 标签和注释使用中文
 - **API 集成**：Axios 在 `src/utils/request.ts` 中配置，包含用于令牌处理的拦截器
 - **扩展计划**：参考 README.md 了解建议的功能扩展
+
+## 常见问题与解决方案
+
+### Vue Router 警告：child without a name
+**警告信息**：`The route named "X" has a child without a name and an empty path`
+**原因**：父路由有 `name`，但其空路径子路由（`path: ''`）没有 `name`
+**解决**：给空路径子路由添加 `name` 属性，如 `name: 'DashboardIndex'`
+
+### Element Plus 废弃警告：type.text
+**警告信息**：`type.text is about to be deprecated in version 3.0.0, please use link instead`
+**原因**：`el-button type="text"` 在 Element Plus 3.0 中将被废弃
+**解决**：将 `type="text"` 改为 `link`，即 `<el-button link>`
+
+### Element Plus 标签类型验证失败
+**警告信息**：`Invalid prop: validation failed for prop "type". Expected one of [...], got value ""`
+**原因**：`el-tag` 的 `type` 属性不能接收空字符串，有效值为：`'primary' | 'success' | 'info' | 'warning' | 'danger'`
+**解决**：将 `:type="condition ? 'danger' : ''"` 改为 `:type="condition ? 'danger' : 'info'"`

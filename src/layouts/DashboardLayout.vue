@@ -23,7 +23,7 @@
           <span class="username">{{ authStore.userInfo.username || '管理员' }}</span>
         </div>
         <!-- 退出按钮 -->
-        <el-button type="text" class="logout-btn" @click="handleLogout">
+        <el-button link class="logout-btn" @click="handleLogout">
           退出登录
         </el-button>
       </div>
