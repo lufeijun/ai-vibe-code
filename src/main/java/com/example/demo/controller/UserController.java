@@ -7,6 +7,7 @@ import com.example.demo.dto.ApiResponse;
 import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.LoginResponse;
 import com.example.demo.dto.RegisterRequest;
+import com.example.demo.dto.PermissionTreeDTO;
 import com.example.demo.dto.UserQueryRequest;
 import com.example.demo.dto.UserWithRolesDTO;
 import com.example.demo.entity.Role;
@@ -87,6 +88,27 @@ public class UserController {
         try {
             IPage<UserWithRolesDTO> page = userService.getUserList(request);
             return ApiResponse.success(page);
+        } catch (Exception e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/permission")
+    public ApiResponse<List<PermissionTreeDTO>> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ApiResponse.error("无效的授权头");
+            }
+
+            String token = authHeader.substring(7);
+            if (!tokenProvider.validateToken(token)) {
+                return ApiResponse.error("无效的令牌");
+            }
+
+            Long userId = tokenProvider.getUserIdFromToken(token);
+            List<PermissionTreeDTO> permissionTree = permissionService.getPermissionTreeByUserId(userId);
+
+            return ApiResponse.success(permissionTree);
         } catch (Exception e) {
             return ApiResponse.error(e.getMessage());
         }

@@ -87,31 +87,57 @@ CREATE TRIGGER update_permissions_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- 插入初始权限数据（四级结构）
+-- Level 1: 仪表盘
+INSERT INTO permissions (parent_id, name, code, type, level, path, icon, sort_order) VALUES
+(0, '仪表盘', 'dashboard', 'system', 1, '/dashboard', 'monitor', 1);
+
+-- Level 2: 仪表盘模块
+INSERT INTO permissions (parent_id, name, code, type, level, path, icon, sort_order) VALUES
+(1, '仪表盘概览', 'dashboard:overview', 'module', 2, '/dashboard/overview', 'monitor', 1);
+
+-- Level 3: 仪表盘页面
+INSERT INTO permissions (parent_id, name, code, type, level, path, icon, sort_order) VALUES
+(2, '概览', 'dashboard:overview:page', 'menu', 3, '/dashboard/overview', 'monitor', 1),
+(2, '统计', 'dashboard:stats:page', 'menu', 3, '/dashboard/stats', 'document', 2);
+
 -- Level 1: 用户管理
 INSERT INTO permissions (parent_id, name, code, type, level, path, icon, sort_order) VALUES
-(0, '用户管理', 'user', 'system', 1, '/user', 'user-management', 1);
+(0, '用户管理', 'user', 'system', 1, '/user', 'user-management', 2);
 
--- Level 2: 用户中心
+-- Level 2: 用户管理模块
 INSERT INTO permissions (parent_id, name, code, type, level, path, icon, sort_order) VALUES
-(1, '用户中心', 'user:center', 'module', 2, '/user/center', 'user-center', 1);
+(4, '用户中心', 'user:center', 'module', 2, '/user', 'user-center', 1);
 
--- Level 3: 用户列表 和 角色列表
+-- Level 3: 用户管理页面
 INSERT INTO permissions (parent_id, name, code, type, level, path, icon, sort_order) VALUES
-(2, '用户列表', 'user:center:userlist', 'menu', 3, '/user/center/userlist', 'user-list', 1),
-(2, '角色列表', 'user:center:rolelist', 'menu', 3, '/user/center/rolelist', 'role-list', 2);
+(5, '用户列表', 'user:center:userlist', 'menu', 3, '/user/list', 'user-list', 1),
+(5, '角色列表', 'user:center:rolelist', 'menu', 3, '/user/role', 'role-list', 2);
 
 -- Level 4: 用户列表操作
 INSERT INTO permissions (parent_id, name, code, type, level, sort_order) VALUES
-(3, '创建用户', 'user:userlist:create', 'button', 4, 1),
-(3, '编辑用户', 'user:userlist:edit', 'button', 4, 2),
-(3, '删除用户', 'user:userlist:delete', 'button', 4, 3);
+(6, '创建用户', 'user:userlist:create', 'button', 4, 1),
+(6, '编辑用户', 'user:userlist:edit', 'button', 4, 2),
+(6, '删除用户', 'user:userlist:delete', 'button', 4, 3);
 
 -- Level 4: 角色列表操作
 INSERT INTO permissions (parent_id, name, code, type, level, sort_order) VALUES
-(4, '创建角色', 'user:rolelist:create', 'button', 4, 1),
-(4, '编辑角色', 'user:rolelist:edit', 'button', 4, 2),
-(4, '删除角色', 'user:rolelist:delete', 'button', 4, 3),
-(4, '分配权限', 'user:rolelist:assign', 'button', 4, 4);
+(7, '创建角色', 'user:rolelist:create', 'button', 4, 1),
+(7, '编辑角色', 'user:rolelist:edit', 'button', 4, 2),
+(7, '删除角色', 'user:rolelist:delete', 'button', 4, 3),
+(7, '分配权限', 'user:rolelist:assign', 'button', 4, 4);
+
+-- Level 1: 系统设置
+INSERT INTO permissions (parent_id, name, code, type, level, path, icon, sort_order) VALUES
+(0, '系统设置', 'system', 'system', 1, '/system', 'setting', 3);
+
+-- Level 2: 系统设置模块
+INSERT INTO permissions (parent_id, name, code, type, level, path, icon, sort_order) VALUES
+(12, '系统管理', 'system:manage', 'module', 2, '/system', 'setting', 1);
+
+-- Level 3: 系统设置页面
+INSERT INTO permissions (parent_id, name, code, type, level, path, icon, sort_order) VALUES
+(13, '系统设置', 'system:settings:page', 'menu', 3, '/system/settings', 'setting', 1),
+(13, '操作日志', 'system:logs:page', 'menu', 3, '/system/logs', 'document', 2);
 
 -- 插入初始角色
 INSERT INTO roles (name, code, description) VALUES

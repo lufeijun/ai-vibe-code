@@ -14,6 +14,8 @@ public interface UserService {
 
     User login(LoginRequest request);
 
+    User getById(Long id);
+
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);

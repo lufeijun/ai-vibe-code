@@ -44,6 +44,12 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<PermissionTreeDTO> getPermissionTreeByUserId(Long userId) {
+        List<Permission> userPermissions = getPermissionsByUserId(userId);
+        return buildTree(userPermissions, 0L);
+    }
+
     private List<PermissionTreeDTO> buildTree(List<Permission> permissions, Long parentId) {
         List<PermissionTreeDTO> tree = new ArrayList<>();
 

@@ -14,4 +14,6 @@ public interface PermissionService extends IService<Permission> {
     List<PermissionTreeDTO> getPermissionTree();
 
     List<String> getPermissionCodesByUserId(Long userId);
+
+    List<PermissionTreeDTO> getPermissionTreeByUserId(Long userId);
 }
