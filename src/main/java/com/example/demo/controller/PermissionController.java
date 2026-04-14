@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.demo.dto.ApiResponse;
 import com.example.demo.dto.PermissionTreeDTO;
+import com.example.demo.dto.PermissionSortUpdateRequest;
 import com.example.demo.entity.Permission;
 import com.example.demo.service.PermissionService;
 import jakarta.validation.Valid;
@@ -28,11 +29,27 @@ public class PermissionController {
     public ApiResponse<List<Permission>> list() {
         List<Permission> permissions = permissionService.list(
                 new LambdaQueryWrapper<Permission>()
-                        .eq(Permission::getEnabled, true)
                         .orderByAsc(Permission::getLevel)
                         .orderByAsc(Permission::getSortOrder)
         );
         return ApiResponse.success(permissions);
+    }
+
+    @PostMapping("/batch-update-sort")
+    public ApiResponse<Void> batchUpdateSort(@RequestBody PermissionSortUpdateRequest request) {
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            return ApiResponse.error("参数不能为空");
+        }
+
+        for (PermissionSortUpdateRequest.PermissionSortItem item : request.getItems()) {
+            Permission permission = permissionService.getById(item.getId());
+            if (permission != null) {
+                permission.setSortOrder(item.getSortOrder());
+                permissionService.updateById(permission);
+            }
+        }
+
+        return ApiResponse.success(null);
     }
 
     @GetMapping("/{id}")
