@@ -25,7 +25,7 @@ public class HelloWorldController {
         return "Hello World!";
     }
 
-    @GetMapping("/health")
+    @GetMapping("/api/info")
     public String health() {
         return "OK";
     }
