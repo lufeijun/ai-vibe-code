@@ -80,6 +80,15 @@ const routes: Array<RouteRecordRaw> = [
           title: '角色管理',
           requiresAuth: true
         }
+      },
+      {
+        path: 'permission',
+        name: 'UserPermission',
+        component: () => import('@/views/user/PermissionListPage.vue'),
+        meta: {
+          title: '权限管理',
+          requiresAuth: true
+        }
       }
     ]
   },
