@@ -37,6 +37,19 @@ public class RoleController {
         }
     }
 
+    @GetMapping("/list")
+    public ApiResponse<List<Role>> listAll() {
+        try {
+            LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Role::getEnabled, true);
+            wrapper.orderByAsc(Role::getId);
+            List<Role> list = roleService.list(wrapper);
+            return ApiResponse.success(list);
+        } catch (Exception e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<RoleDTO> getDetail(@PathVariable Long id) {
         RoleDTO roleDTO = roleService.getRoleDetail(id);

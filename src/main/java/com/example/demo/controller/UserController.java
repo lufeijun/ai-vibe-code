@@ -10,6 +10,8 @@ import com.example.demo.dto.RegisterRequest;
 import com.example.demo.dto.PermissionTreeDTO;
 import com.example.demo.dto.UserQueryRequest;
 import com.example.demo.dto.UserWithRolesDTO;
+import com.example.demo.dto.UserCreateRequest;
+import com.example.demo.dto.UserUpdateRequest;
 import com.example.demo.entity.Role;
 import com.example.demo.entity.User;
 import com.example.demo.service.PermissionService;
@@ -109,6 +111,48 @@ public class UserController {
             List<PermissionTreeDTO> permissionTree = permissionService.getPermissionTreeByUserId(userId);
 
             return ApiResponse.success(permissionTree);
+        } catch (Exception e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/create")
+    public ApiResponse<User> createUser(@RequestBody UserCreateRequest request) {
+        try {
+            User user = userService.createUser(request);
+            user.setPassword(null);
+            return ApiResponse.success("创建成功", user);
+        } catch (Exception e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/update")
+    public ApiResponse<User> updateUser(@RequestBody UserUpdateRequest request) {
+        try {
+            User user = userService.updateUser(request);
+            user.setPassword(null);
+            return ApiResponse.success("更新成功", user);
+        } catch (Exception e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<UserWithRolesDTO> getUserById(@PathVariable Long id) {
+        try {
+            User user = userService.getById(id);
+            if (user == null) {
+                return ApiResponse.error("用户不存在");
+            }
+
+            UserWithRolesDTO dto = new UserWithRolesDTO();
+            org.springframework.beans.BeanUtils.copyProperties(user, dto);
+
+            List<Role> roles = roleService.getRolesByUserId(id);
+            dto.setRoles(roles);
+
+            return ApiResponse.success(dto);
         } catch (Exception e) {
             return ApiResponse.error(e.getMessage());
         }

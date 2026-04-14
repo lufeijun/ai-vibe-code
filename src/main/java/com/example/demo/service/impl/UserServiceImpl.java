@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.RegisterRequest;
+import com.example.demo.dto.UserCreateRequest;
 import com.example.demo.dto.UserQueryRequest;
+import com.example.demo.dto.UserUpdateRequest;
 import com.example.demo.dto.UserWithRolesDTO;
 import com.example.demo.entity.Role;
 import com.example.demo.entity.User;
@@ -127,6 +129,9 @@ public class UserServiceImpl implements UserService {
         if (StringUtils.hasText(request.getPhone())) {
             dataWrapper.like(User::getPhone, request.getPhone());
         }
+        if (request.getIsEmployed() != null) {
+            dataWrapper.eq(User::getIsEmployed, request.getIsEmployed());
+        }
 
         dataWrapper.orderByDesc(User::getId);
 
@@ -188,5 +193,97 @@ public class UserServiceImpl implements UserService {
         // dtoPage.setPages(resultPage.getPages());
 
         return dtoPage;
+    }
+
+    @Override
+    public User createUser(UserCreateRequest request) {
+        if (existsByUsername(request.getUsername())) {
+            throw new RuntimeException("用户名已存在");
+        }
+        if (StringUtils.hasText(request.getEmail()) && existsByEmail(request.getEmail())) {
+            throw new RuntimeException("邮箱已存在");
+        }
+        if (StringUtils.hasText(request.getPhone()) && existsByPhone(request.getPhone())) {
+            throw new RuntimeException("手机号已存在");
+        }
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword() != null ? request.getPassword() : "123456"));
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setCity(request.getCity());
+        user.setIsEmployed(request.getIsEmployed() != null ? request.getIsEmployed() : true);
+        user.setHireDate(request.getHireDate());
+        user.setResignationDate(request.getResignationDate());
+
+        userMapper.insert(user);
+
+        // 分配角色
+        if (!CollectionUtils.isEmpty(request.getRoleIds())) {
+            assignRoles(user.getId(), request.getRoleIds());
+        }
+
+        return user;
+    }
+
+    @Override
+    public User updateUser(UserUpdateRequest request) {
+        User user = getById(request.getId());
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 检查邮箱唯一性（排除当前用户）
+        if (StringUtils.hasText(request.getEmail())) {
+            LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(User::getEmail, request.getEmail()).ne(User::getId, request.getId());
+            if (userMapper.selectCount(wrapper) > 0) {
+                throw new RuntimeException("邮箱已被其他用户使用");
+            }
+        }
+
+        // 检查手机号唯一性（排除当前用户）
+        if (StringUtils.hasText(request.getPhone())) {
+            LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(User::getPhone, request.getPhone()).ne(User::getId, request.getId());
+            if (userMapper.selectCount(wrapper) > 0) {
+                throw new RuntimeException("手机号已被其他用户使用");
+            }
+        }
+
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setCity(request.getCity());
+        user.setIsEmployed(request.getIsEmployed());
+        user.setHireDate(request.getHireDate());
+        user.setResignationDate(request.getResignationDate());
+
+        userMapper.updateById(user);
+
+        // 更新角色
+        if (request.getRoleIds() != null) {
+            assignRoles(user.getId(), request.getRoleIds());
+        }
+
+        return user;
+    }
+
+    @Override
+    public void assignRoles(Long userId, List<Long> roleIds) {
+        // 先删除用户原有角色
+        LambdaQueryWrapper<UserRole> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserRole::getUserId, userId);
+        userRoleMapper.delete(wrapper);
+
+        // 添加新角色
+        if (!CollectionUtils.isEmpty(roleIds)) {
+            for (Long roleId : roleIds) {
+                UserRole userRole = new UserRole();
+                userRole.setUserId(userId);
+                userRole.setRoleId(roleId);
+                userRoleMapper.insert(userRole);
+            }
+        }
     }
 }
