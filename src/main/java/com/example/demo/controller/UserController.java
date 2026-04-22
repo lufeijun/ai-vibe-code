@@ -12,6 +12,7 @@ import com.example.demo.dto.UserQueryRequest;
 import com.example.demo.dto.UserWithRolesDTO;
 import com.example.demo.dto.UserCreateRequest;
 import com.example.demo.dto.UserUpdateRequest;
+import com.example.demo.dto.ChangePasswordRequest;
 import com.example.demo.entity.Role;
 import com.example.demo.entity.User;
 import com.example.demo.service.PermissionService;
@@ -153,6 +154,16 @@ public class UserController {
             dto.setRoles(roles);
 
             return ApiResponse.success(dto);
+        } catch (Exception e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/change-password")
+    public ApiResponse<Void> changePassword(@RequestBody ChangePasswordRequest request) {
+        try {
+            userService.changePassword(request.getUserId(), request.getNewPassword());
+            return ApiResponse.success("密码修改成功", null);
         } catch (Exception e) {
             return ApiResponse.error(e.getMessage());
         }

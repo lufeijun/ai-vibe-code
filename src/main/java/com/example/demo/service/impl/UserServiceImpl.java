@@ -234,6 +234,16 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("用户不存在");
         }
 
+        // 检查用户名唯一性（排除当前用户）
+        if (StringUtils.hasText(request.getUsername())) {
+            LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(User::getUsername, request.getUsername()).ne(User::getId, request.getId());
+            if (userMapper.selectCount(wrapper) > 0) {
+                throw new RuntimeException("用户名已被其他用户使用");
+            }
+            user.setUsername(request.getUsername());
+        }
+
         // 检查邮箱唯一性（排除当前用户）
         if (StringUtils.hasText(request.getEmail())) {
             LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
@@ -241,6 +251,7 @@ public class UserServiceImpl implements UserService {
             if (userMapper.selectCount(wrapper) > 0) {
                 throw new RuntimeException("邮箱已被其他用户使用");
             }
+            user.setEmail(request.getEmail());
         }
 
         // 检查手机号唯一性（排除当前用户）
@@ -250,14 +261,21 @@ public class UserServiceImpl implements UserService {
             if (userMapper.selectCount(wrapper) > 0) {
                 throw new RuntimeException("手机号已被其他用户使用");
             }
+            user.setPhone(request.getPhone());
         }
 
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        user.setCity(request.getCity());
-        user.setIsEmployed(request.getIsEmployed());
-        user.setHireDate(request.getHireDate());
-        user.setResignationDate(request.getResignationDate());
+        if (request.getCity() != null) {
+            user.setCity(request.getCity());
+        }
+        if (request.getIsEmployed() != null) {
+            user.setIsEmployed(request.getIsEmployed());
+        }
+        if (request.getHireDate() != null) {
+            user.setHireDate(request.getHireDate());
+        }
+        if (request.getResignationDate() != null) {
+            user.setResignationDate(request.getResignationDate());
+        }
 
         userMapper.updateById(user);
 
@@ -285,5 +303,24 @@ public class UserServiceImpl implements UserService {
                 userRoleMapper.insert(userRole);
             }
         }
+    }
+
+    @Override
+    public void changePassword(Long userId, String newPassword) {
+        User user = getById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        if (!StringUtils.hasText(newPassword)) {
+            throw new RuntimeException("密码不能为空");
+        }
+
+        if (newPassword.length() < 6) {
+            throw new RuntimeException("密码长度不能少于6位");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userMapper.updateById(user);
     }
 }

@@ -31,4 +31,6 @@ public interface UserService {
     User updateUser(UserUpdateRequest request);
 
     void assignRoles(Long userId, List<Long> roleIds);
+
+    void changePassword(Long userId, String newPassword);
 }

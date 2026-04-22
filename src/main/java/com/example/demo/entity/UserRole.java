@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("user_roles")
 public class UserRole {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     @TableField("user_id")
