@@ -24,7 +24,7 @@
       </div>
       <div class="header-right">
         <!-- 用户信息 -->
-        <div class="user-info">
+        <div class="user-info" @click="handleUserInfoClick">
           <el-avatar :size="32" :src="avatarUrl">{{ userInitial }}</el-avatar>
           <span class="username">{{ authStore.userInfo.username || '管理员' }}</span>
         </div>
@@ -33,6 +33,92 @@
           退出登录
         </el-button>
       </div>
+
+      <!-- 用户信息弹窗 -->
+      <el-dialog
+        v-model="userInfoDialogVisible"
+        title="用户信息"
+        width="500px"
+        @close="resetUserInfoForm"
+      >
+        <el-form
+          ref="userInfoFormRef"
+          :model="userInfoForm"
+          :rules="userInfoRules"
+          label-width="100px"
+        >
+          <el-form-item label="用户名">
+            <el-input v-model="userInfoForm.username" />
+          </el-form-item>
+          <el-form-item label="邮箱">
+            <el-input v-model="userInfoForm.email" disabled />
+          </el-form-item>
+          <el-form-item label="手机号">
+            <el-input v-model="userInfoForm.phone" />
+          </el-form-item>
+          <el-form-item label="城市">
+            <el-input v-model="userInfoForm.city" />
+          </el-form-item>
+          <el-form-item label="角色">
+            <el-tag
+              v-for="role in userInfoForm.roles"
+              :key="role.id"
+              type="primary"
+              style="margin-right: 8px; margin-bottom: 4px;"
+            >
+              {{ role.name }}
+            </el-tag>
+            <span v-if="!userInfoForm.roles || userInfoForm.roles.length === 0" class="text-gray">
+              暂无角色
+            </span>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="handleOpenChangePassword">修改密码</el-button>
+          <el-button @click="userInfoDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSaveUserInfo" :loading="savingUserInfo">
+            保存
+          </el-button>
+        </template>
+      </el-dialog>
+
+      <!-- 修改密码弹窗 -->
+      <el-dialog
+        v-model="passwordDialogVisible"
+        title="修改密码"
+        width="400px"
+        @close="resetPasswordForm"
+      >
+        <el-form
+          ref="passwordFormRef"
+          :model="passwordForm"
+          :rules="passwordRules"
+          label-width="100px"
+        >
+          <el-form-item label="新密码" prop="newPassword">
+            <el-input
+              v-model="passwordForm.newPassword"
+              type="password"
+              show-password
+              placeholder="请输入新密码"
+            />
+          </el-form-item>
+          <el-form-item label="确认密码" prop="confirmPassword">
+            <el-input
+              v-model="passwordForm.confirmPassword"
+              type="password"
+              show-password
+              placeholder="请再次输入新密码"
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="passwordDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSavePassword" :loading="savingPassword">
+            确认修改
+          </el-button>
+        </template>
+      </el-dialog>
     </el-header>
 
     <div class="main-container">
@@ -86,9 +172,9 @@
 
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { ref, computed, onMounted, watch } from 'vue'
-import { useAuthStore, type PermissionTreeDTO } from '@/stores/auth'
+import { useAuthStore, type PermissionTreeDTO, type RoleDTO } from '@/stores/auth'
 import {
   Setting,
   Monitor,
@@ -105,6 +191,53 @@ import {
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+
+// 用户信息弹窗相关
+const userInfoDialogVisible = ref(false)
+const userInfoFormRef = ref<FormInstance>()
+const savingUserInfo = ref(false)
+const userInfoForm = ref({
+  username: '',
+  email: '',
+  phone: '',
+  city: '',
+  roles: [] as RoleDTO[]
+})
+const userInfoRules: FormRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 2, max: 50, message: '用户名长度在 2 到 50 个字符', trigger: 'blur' }
+  ],
+  phone: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ]
+}
+
+// 修改密码弹窗相关
+const passwordDialogVisible = ref(false)
+const passwordFormRef = ref<FormInstance>()
+const savingPassword = ref(false)
+const passwordForm = ref({
+  newPassword: '',
+  confirmPassword: ''
+})
+const validateConfirmPassword = (rule: any, value: any, callback: any) => {
+  if (value !== passwordForm.value.newPassword) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
+const passwordRules: FormRules = {
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
+  ]
+}
 
 // 图标映射
 const iconMap: Record<string, any> = {
@@ -125,12 +258,130 @@ const getIcon = (iconName: string | undefined) => {
   return iconMap[iconName]
 }
 
-// 在组件挂载时获取权限树
+// 在组件挂载时获取权限树和用户信息
 onMounted(async () => {
   if (authStore.isAuthenticated) {
     await authStore.fetchPermissionTree()
+    // 同时获取完整用户信息
+    if (!authStore.fullUserInfo) {
+      await authStore.fetchFullUserInfo()
+    }
   }
 })
+
+// 用户信息相关方法
+const handleUserInfoClick = async () => {
+  // 优先使用已有的完整用户信息
+  if (authStore.fullUserInfo) {
+    userInfoForm.value = {
+      username: authStore.fullUserInfo.username,
+      email: authStore.fullUserInfo.email,
+      phone: authStore.fullUserInfo.phone,
+      city: authStore.fullUserInfo.city || '',
+      roles: authStore.fullUserInfo.roles || []
+    }
+  } else {
+    // 否则使用基本信息
+    userInfoForm.value = {
+      username: authStore.userInfo.username,
+      email: authStore.userInfo.email,
+      phone: authStore.userInfo.phone,
+      city: '',
+      roles: []
+    }
+  }
+
+  // 打开弹窗
+  userInfoDialogVisible.value = true
+
+  // 异步获取最新的完整用户信息
+  try {
+    await authStore.fetchFullUserInfo()
+    // 更新表单
+    if (authStore.fullUserInfo) {
+      userInfoForm.value = {
+        username: authStore.fullUserInfo.username,
+        email: authStore.fullUserInfo.email,
+        phone: authStore.fullUserInfo.phone,
+        city: authStore.fullUserInfo.city || '',
+        roles: authStore.fullUserInfo.roles || []
+      }
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+  }
+}
+
+const resetUserInfoForm = () => {
+  userInfoFormRef.value?.resetFields()
+}
+
+const handleSaveUserInfo = async () => {
+  if (!userInfoFormRef.value) return
+
+  await userInfoFormRef.value.validate(async (valid) => {
+    if (valid) {
+      savingUserInfo.value = true
+      try {
+        const success = await authStore.updateUserInfo({
+          username: userInfoForm.value.username,
+          phone: userInfoForm.value.phone,
+          city: userInfoForm.value.city
+        })
+
+        if (success) {
+          ElMessage.success('用户信息更新成功')
+          userInfoDialogVisible.value = false
+        } else {
+          ElMessage.error('用户信息更新失败')
+        }
+      } catch (error) {
+        ElMessage.error('用户信息更新失败')
+      } finally {
+        savingUserInfo.value = false
+      }
+    }
+  })
+}
+
+const handleOpenChangePassword = () => {
+  passwordDialogVisible.value = true
+}
+
+const resetPasswordForm = () => {
+  passwordForm.value = {
+    newPassword: '',
+    confirmPassword: ''
+  }
+  passwordFormRef.value?.resetFields()
+}
+
+const handleSavePassword = async () => {
+  if (!passwordFormRef.value) return
+
+  await passwordFormRef.value.validate(async (valid) => {
+    if (valid) {
+      savingPassword.value = true
+      try {
+        const result = await authStore.changePassword(
+          authStore.userInfo.id,
+          passwordForm.value.newPassword
+        )
+
+        if (result.success) {
+          ElMessage.success(result.message)
+          passwordDialogVisible.value = false
+        } else {
+          ElMessage.error(result.message)
+        }
+      } catch (error) {
+        ElMessage.error('密码修改失败')
+      } finally {
+        savingPassword.value = false
+      }
+    }
+  })
+}
 
 // 监听认证状态变化
 watch(() => authStore.isAuthenticated, async (newVal) => {
@@ -332,7 +583,18 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  cursor: default;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.text-gray {
+  color: #999;
 }
 
 .username {

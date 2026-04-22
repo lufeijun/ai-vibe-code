@@ -89,8 +89,9 @@
               {{ formatDate(row.createdAt) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center" fixed="right">
+          <el-table-column label="操作" width="180" align="center" fixed="right">
             <template #default="{ row }">
+              <el-button type="warning" size="small" @click="handleChangePassword(row)">修改密码</el-button>
               <el-button type="primary" size="small" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
             </template>
           </el-table-column>
@@ -169,6 +170,43 @@
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleSubmit" :loading="submitLoading">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 修改密码对话框 -->
+    <el-dialog
+      v-model="passwordDialogVisible"
+      title="修改用户密码"
+      width="400px"
+      :close-on-click-modal="false"
+      @close="resetPasswordForm"
+    >
+      <el-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-width="100px">
+        <el-form-item label="用户名">
+          <el-input v-model="passwordForm.username" disabled />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input
+            v-model="passwordForm.newPassword"
+            type="password"
+            show-password
+            placeholder="请输入新密码"
+          />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input
+            v-model="passwordForm.confirmPassword"
+            type="password"
+            show-password
+            placeholder="请再次输入新密码"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="passwordDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handlePasswordSubmit" :loading="passwordSubmitLoading">
+          确定修改
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -272,6 +310,34 @@ const formRules: FormRules = {
   ],
   phone: [
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ]
+}
+
+// 修改密码对话框相关
+const passwordDialogVisible = ref(false)
+const passwordSubmitLoading = ref(false)
+const passwordFormRef = ref<FormInstance>()
+const passwordForm = reactive({
+  userId: 0,
+  username: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+const validateConfirmPassword = (rule: any, value: any, callback: any) => {
+  if (value !== passwordForm.newPassword) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
+const passwordRules: FormRules = {
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
   ]
 }
 
@@ -445,6 +511,53 @@ const handleSubmit = async () => {
       ElMessage.error('操作失败')
     } finally {
       submitLoading.value = false
+    }
+  })
+}
+
+// 修改密码
+const handleChangePassword = (row: User) => {
+  passwordForm.userId = row.id
+  passwordForm.username = row.username
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  passwordDialogVisible.value = true
+}
+
+// 重置密码表单
+const resetPasswordForm = () => {
+  passwordForm.userId = 0
+  passwordForm.username = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  passwordFormRef.value?.resetFields()
+}
+
+// 提交修改密码
+const handlePasswordSubmit = async () => {
+  if (!passwordFormRef.value) return
+
+  await passwordFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    passwordSubmitLoading.value = true
+    try {
+      const res: any = await request.post('/user/change-password', {
+        userId: passwordForm.userId,
+        newPassword: passwordForm.newPassword
+      })
+
+      if (res.code === 200) {
+        ElMessage.success('密码修改成功')
+        passwordDialogVisible.value = false
+      } else {
+        ElMessage.error(res.message || '密码修改失败')
+      }
+    } catch (error) {
+      console.error('密码修改失败:', error)
+      ElMessage.error('密码修改失败')
+    } finally {
+      passwordSubmitLoading.value = false
     }
   })
 }
