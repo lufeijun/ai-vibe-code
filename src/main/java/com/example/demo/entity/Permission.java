@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("permissions")
 public class Permission {
-    @TableId(type = IdType.ASSIGN_ID)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     @TableField("parent_id")
