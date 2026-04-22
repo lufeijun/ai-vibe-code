@@ -97,6 +97,8 @@ import {
   Lock,
   UserFilled,
   List,
+  Basketball,
+  DataBoard,
   Management
 } from '@element-plus/icons-vue'
 
@@ -113,6 +115,8 @@ const iconMap: Record<string, any> = {
   'setting': Setting,
   'monitor': Monitor,
   'document': Document,
+  'Basketball': Basketball,
+  'DataBoard': DataBoard,
   'user': UserIcon
 }
 
