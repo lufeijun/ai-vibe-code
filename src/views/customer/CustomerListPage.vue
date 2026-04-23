@@ -255,7 +255,13 @@ const handleSubmit = async () => {
   submitLoading.value = true
   try {
     const url = isEdit.value ? '/customer/update' : '/customer/create'
-    const res: any = await request.post(url, formData)
+    const payload = { ...formData }
+
+    if (!isEdit.value) {
+      delete payload.id
+    }
+
+    const res: any = await request.post(url, payload)
     if (res.code === 200) {
       ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
       dialogVisible.value = false

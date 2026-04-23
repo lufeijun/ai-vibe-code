@@ -35,6 +35,11 @@
           <el-table-column prop="endDate" label="活动结束" width="120" />
           <el-table-column prop="registrationStart" label="报名开始" width="120" />
           <el-table-column prop="registrationEnd" label="报名结束" width="120" />
+          <el-table-column prop="fee" label="费用" width="100">
+            <template #default="{ row }">
+              ¥{{ row.fee }}
+            </template>
+          </el-table-column>
           <el-table-column prop="status" label="状态" width="100">
             <template #default="{ row }">
               <el-tag :type="getStatusType(row.status)">{{ row.status }}</el-tag>
@@ -97,6 +102,9 @@
         <el-form-item label="最大人数">
           <el-input-number v-model="formData.maxParticipants" :min="1" style="width: 100%" />
         </el-form-item>
+        <el-form-item label="活动费用">
+          <el-input-number v-model="formData.fee" :min="0" :precision="2" style="width: 100%" />
+        </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="formData.status" placeholder="请选择状态" style="width: 100%">
             <el-option label="未开始" value="未开始" />
@@ -134,6 +142,7 @@ interface Activity {
   maxParticipants: number
   status: string
   description: string
+  fee: number
 }
 
 const searchForm = reactive({
@@ -166,7 +175,8 @@ const formData = reactive({
   location: '',
   maxParticipants: 100,
   status: '未开始',
-  description: ''
+  description: '',
+  fee: 0
 })
 
 const getStatusType = (status: string) => {
@@ -267,7 +277,13 @@ const handleSubmit = async () => {
   submitLoading.value = true
   try {
     const url = isEdit.value ? '/activity/update' : '/activity/create'
-    const res: any = await request.post(url, formData)
+    const payload = { ...formData }
+
+    if (!isEdit.value) {
+      delete payload.id
+    }
+
+    const res: any = await request.post(url, payload)
     if (res.code === 200) {
       ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
       dialogVisible.value = false

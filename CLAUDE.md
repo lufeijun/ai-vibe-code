@@ -108,3 +108,24 @@
 **警告信息**：`Invalid prop: validation failed for prop "type". Expected one of [...], got value ""`
 **原因**：`el-tag` 的 `type` 属性不能接收空字符串，有效值为：`'primary' | 'success' | 'info' | 'warning' | 'danger'`
 **解决**：将 `:type="condition ? 'danger' : ''"` 改为 `:type="condition ? 'danger' : 'info'"`
+
+### 新增记录时ID为0的问题
+**问题**：使用PostgreSQL + MyBatis-Plus时，新增记录后返回的对象ID为0，而不是数据库生成的自增ID
+**原因**：前端在调用创建接口时发送了`id: 0`字段，导致MyBatis-Plus不能正确处理自增ID回填
+**解决**：
+1. 前端：在调用创建接口前，从payload中删除id字段
+```typescript
+const payload = { ...formData }
+if (!isEdit.value) {
+  delete payload.id
+}
+```
+2. 后端实体：添加`@KeySequence`注解指定PostgreSQL序列名，并确保`@TableId(type = IdType.AUTO)`
+```java
+@TableName("coupons")
+@KeySequence(value = "coupons_id_seq", dbType = DbType.POSTGRE_SQL)
+public class Coupon {
+    @TableId(type = IdType.AUTO)
+    private Long id;
+}
+```

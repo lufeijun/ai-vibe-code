@@ -493,10 +493,16 @@ const handleSubmit = async () => {
     submitLoading.value = true
     try {
       let res: any
+      const payload = { ...formData }
+
+      if (!isEdit.value) {
+        delete payload.id
+      }
+
       if (isEdit.value) {
-        res = await request.post('/user/update', formData)
+        res = await request.post('/user/update', payload)
       } else {
-        res = await request.post('/user/create', formData)
+        res = await request.post('/user/create', payload)
       }
 
       if (res.code === 200) {

@@ -132,6 +132,15 @@ const routes: Array<RouteRecordRaw> = [
                     title: '客户详情',
                     requiresAuth: true
                 }
+            },
+            {
+                path: 'coupon',
+                name: 'CustomerCoupon',
+                component: () => import('@/views/customer/CouponListPage.vue'),
+                meta: {
+                    title: '优惠券管理',
+                    requiresAuth: true
+                }
             }
         ]
     },

@@ -391,6 +391,7 @@ const handleSubmit = async () => {
           ...formData,
           level
         }
+        delete createData.id
         res = await request.post('/permission', createData)
       }
 
