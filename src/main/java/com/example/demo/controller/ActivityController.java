@@ -33,7 +33,9 @@ public class ActivityController {
     @PostMapping("/create")
     public ApiResponse<Activity> create(@RequestBody Activity activity) {
         activityService.save(activity);
-        return ApiResponse.success(activity);
+        // 重新从数据库查询以确保获取正确的自增ID
+        Activity savedActivity = activityService.getById(activity.getId());
+        return ApiResponse.success(savedActivity != null ? savedActivity : activity);
     }
 
     @PostMapping("/update")

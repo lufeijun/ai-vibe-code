@@ -83,7 +83,11 @@ public class RoleController {
         // enabled 默认为空，不做处理
 
         roleService.save(role);
-        return ApiResponse.success(role);
+        // 重新从数据库查询以确保获取正确的自增ID
+        LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Role::getCode, role.getCode());
+        Role savedRole = roleService.getOne(wrapper);
+        return ApiResponse.success(savedRole != null ? savedRole : role);
     }
 
     @PostMapping("update/{id}")

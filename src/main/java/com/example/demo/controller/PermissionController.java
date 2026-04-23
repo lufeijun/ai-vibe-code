@@ -64,7 +64,11 @@ public class PermissionController {
     @PostMapping
     public ApiResponse<Permission> create(@Valid @RequestBody Permission permission) {
         permissionService.save(permission);
-        return ApiResponse.success(permission);
+        // 重新从数据库查询，使用code作为唯一标识获取最新记录
+        LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Permission::getCode, permission.getCode());
+        Permission savedPermission = permissionService.getOne(wrapper);
+        return ApiResponse.success(savedPermission != null ? savedPermission : permission);
     }
 
     @PutMapping("/{id}")

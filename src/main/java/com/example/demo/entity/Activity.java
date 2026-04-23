@@ -1,12 +1,15 @@
 package com.example.demo.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.DbType;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
 @TableName("activities")
+@KeySequence(value = "activities_id_seq", dbType = DbType.POSTGRE_SQL)
 public class Activity {
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -35,6 +38,8 @@ public class Activity {
     private String status;
 
     private String description;
+
+    private BigDecimal fee;
 
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

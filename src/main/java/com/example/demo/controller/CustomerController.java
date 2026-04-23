@@ -43,7 +43,9 @@ public class CustomerController {
             return ApiResponse.error("该手机号已存在");
         }
         customerService.save(customer);
-        return ApiResponse.success(customer);
+        // 重新从数据库查询以确保获取正确的自增ID
+        Customer savedCustomer = customerService.getById(customer.getId());
+        return ApiResponse.success(savedCustomer != null ? savedCustomer : customer);
     }
 
     @PostMapping("/update")

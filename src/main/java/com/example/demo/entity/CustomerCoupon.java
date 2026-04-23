@@ -6,27 +6,28 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("registrations")
-@KeySequence(value = "registrations_id_seq", dbType = DbType.POSTGRE_SQL)
-public class Registration {
+@TableName("customer_coupons")
+@KeySequence(value = "customer_coupons_id_seq", dbType = DbType.POSTGRE_SQL)
+public class CustomerCoupon {
     @TableId(type = IdType.AUTO)
     private Long id;
 
     @TableField("customer_id")
     private Long customerId;
 
-    @TableField("activity_id")
-    private Long activityId;
-
-    @TableField("customer_coupon_id")
-    private Long customerCouponId;
-
-    @TableField("registration_time")
-    private LocalDateTime registrationTime;
+    @TableField("coupon_id")
+    private Long couponId;
 
     private String status;
 
-    private String remarks;
+    @TableField("received_time")
+    private LocalDateTime receivedTime;
+
+    @TableField("used_time")
+    private LocalDateTime usedTime;
+
+    @TableField("registration_id")
+    private Long registrationId;
 
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

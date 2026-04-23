@@ -3,12 +3,17 @@ package com.example.demo.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.demo.dto.ApiResponse;
 import com.example.demo.entity.Activity;
+import com.example.demo.entity.Coupon;
+import com.example.demo.entity.CustomerCoupon;
 import com.example.demo.entity.FollowUp;
 import com.example.demo.entity.Registration;
 import com.example.demo.service.ActivityService;
+import com.example.demo.service.CouponService;
+import com.example.demo.service.CustomerCouponService;
 import com.example.demo.service.FollowUpService;
 import com.example.demo.service.RegistrationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -23,8 +28,11 @@ public class RegistrationController {
     private final RegistrationService registrationService;
     private final ActivityService activityService;
     private final FollowUpService followUpService;
+    private final CouponService couponService;
+    private final CustomerCouponService customerCouponService;
 
     @PostMapping("/create")
+    @Transactional
     public ApiResponse<Registration> create(@RequestBody Registration registration) {
         Activity activity = activityService.getById(registration.getActivityId());
         if (activity == null) {
@@ -39,7 +47,26 @@ public class RegistrationController {
         registration.setRegistrationTime(LocalDateTime.now());
         registration.setStatus("已报名");
         registrationService.save(registration);
-        return ApiResponse.success(registration);
+
+        if (registration.getCustomerCouponId() != null) {
+            CustomerCoupon customerCoupon = customerCouponService.getById(registration.getCustomerCouponId());
+            if (customerCoupon != null && "未使用".equals(customerCoupon.getStatus())) {
+                customerCoupon.setStatus("已使用");
+                customerCoupon.setUsedTime(LocalDateTime.now());
+                customerCoupon.setRegistrationId(registration.getId());
+                customerCouponService.updateById(customerCoupon);
+
+                Coupon coupon = couponService.getById(customerCoupon.getCouponId());
+                if (coupon != null) {
+                    coupon.setUsedQuantity(coupon.getUsedQuantity() + 1);
+                    couponService.updateById(coupon);
+                }
+            }
+        }
+
+        // 重新从数据库查询以确保获取正确的自增ID
+        Registration savedRegistration = registrationService.getById(registration.getId());
+        return ApiResponse.success(savedRegistration != null ? savedRegistration : registration);
     }
 
     @PostMapping("/update")

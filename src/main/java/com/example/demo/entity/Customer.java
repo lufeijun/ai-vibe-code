@@ -1,11 +1,13 @@
 package com.example.demo.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.DbType;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
 @TableName("customers")
+@KeySequence(value = "customers_id_seq", dbType = DbType.POSTGRE_SQL)
 public class Customer {
     @TableId(type = IdType.AUTO)
     private Long id;
